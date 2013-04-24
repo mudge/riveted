@@ -3,13 +3,27 @@
 A work-in-progress Clojure interface for parsing XML with
 [VTD-XML](http://vtd-xml.sourceforge.net).
 
+It provides a more Clojure-like abstraction over VTD while still exposing the
+ability to traverse a document's elements with `(first-child nav)`,
+`(parent nav)`, `(next-sibling nav)`, etc.
+
+Note that, unlike most XML libraries, you use selectors to return navigators
+(viz. a cursor to a point within the document) that can then be interrogated
+for their tag name, attributes and text values with other functions.
+
 ## Usage
 
 ```clojure
 (ns foo
   (:require [riveted.core :as vtd]))
 
-(def nav (vtd/navigator (slurp "foo.xml")))
+;; Create an initial navigator for the XML document in foo.xml (the second
+;; argument toggles namespace awareness).
+(def nav (vtd/navigator (slurp "foo.xml") false))
+
+(def bold-words
+  (vtd/search nav "//b"))
+;=> returns a lazy sequence of navigators for each matching element
 
 (def title
   (vtd/at nav "/article/front/article-meta/title-group/article-title"))
@@ -24,15 +38,33 @@ A work-in-progress Clojure interface for parsing XML with
 (vtd/attr title :id)
 ;=> "123"
 
-(def bold-words
-  (vtd/search nav "//b"))
-;=> returns a lazy sequence of navigators for each matching element
+(vtd/fragment title)
+;=> "<b>Some</b> title"
+
+(vtd/parent title)
+;=> return a navigator for the parent element
+
+(vtd/next-sibling title)
+;=> return a navigator for the next sibling element
+
+(vtd/first-child title)
+;=> return a navigator for the first child element
+
+(vtd/last-child title)
+;=> return a navigator for the last child element
+
+(vtd/siblings title)
+;=> return a lazy sequence of all sibling elements
+
+(vtd/children title)
+;=> return a lazy sequence of all children elements (note this does not
+;   include text nodes)
 ```
 
 ## Acknowledgements
 
 [Andrew Diamond's `clj-vtd-xml`](https://github.com/diamondap/clj-vtd-xml) and
-[Tim William's gist](https://gist.github.com/willtim/822769) are existing
+[Tim Williams' gist](https://gist.github.com/willtim/822769) are existing
 interfaces to VTD-XML from Clojure that were great sources of inspiration.
 
 ## License

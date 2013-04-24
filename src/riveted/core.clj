@@ -45,6 +45,14 @@
   [navigator]
   (navigate navigator VTDNav/FIRST_CHILD))
 
+(defn last-child
+  [navigator]
+  (navigate navigator VTDNav/LAST_CHILD))
+
+(defn root
+  [navigator]
+  (navigate navigator VTDNav/ROOT))
+
 (defn siblings
   [navigator]
   (when-let [sibling (next-sibling navigator)]

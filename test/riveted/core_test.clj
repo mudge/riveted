@@ -28,3 +28,19 @@
     (is (= "42" (attr (at nav "/root/complex-title") :id)))
     (is (= "42" (attr (at nav "/root/complex-title") "id")))
     (is (nil? (attr (at nav "/root/complex-title") :missing)))))
+
+(deftest test-parent
+  (testing "Returns a navigator for the parent element"
+    (is (= "root" (tag (parent (at nav "/root/basic-title")))))))
+
+(deftest test-root
+  (testing "Returns a navigator for the root element"
+    (is (= "root" (tag (root (at nav "/root/complex-title/i")))))))
+
+(deftest test-first-child
+  (testing "Returns a navigator for the first child element"
+    (is (= "i" (tag (first-child (at nav "/root/complex-title")))))))
+
+(deftest test-last-child
+  (testing "Returns a navigator for the last child element"
+    (is (= "b" (tag (last-child (at nav "/root/complex-title")))))))
