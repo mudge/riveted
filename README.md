@@ -9,19 +9,19 @@ A work-in-progress Clojure interface for parsing XML with
 (ns foo
   (:require [riveted.core :as vtd]))
 
-(def nav (navigator (slurp "foo.xml")))
+(def nav (vtd/navigator (slurp "foo.xml")))
 
 (def title
-  (search nav "/article/front/article-meta/title-group/article-title"))
+  (vtd/at nav "/article/front/article-meta/title-group/article-title"))
 ; => returns another navigator that can be interrogated...
 
-(tag title)
+(vtd/tag title)
 ; => "article-title"
 
-(text title)
+(vtd/text title)
 ; => "Some title"
 
-(attr title :id)
+(vtd/attr title :id)
 ; => "123"
 ```
 
