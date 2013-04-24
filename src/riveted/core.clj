@@ -37,6 +37,10 @@
   [navigator]
   (navigate navigator VTDNav/NEXT_SIBLING))
 
+(defn previous-sibling
+  [navigator]
+  (navigate navigator VTDNav/PREV_SIBLING))
+
 (defn parent
   [navigator]
   (navigate navigator VTDNav/PARENT))
@@ -53,10 +57,20 @@
   [navigator]
   (navigate navigator VTDNav/ROOT))
 
-(defn siblings
+(defn- next-siblings
   [navigator]
   (when-let [sibling (next-sibling navigator)]
-    (cons sibling (lazy-seq (siblings sibling)))))
+    (cons sibling (lazy-seq (next-siblings sibling)))))
+
+(defn- previous-siblings
+  [navigator]
+  (when-let [sibling (previous-sibling navigator)]
+    (cons sibling (lazy-seq (previous-siblings sibling)))))
+
+(defn siblings
+  "Return all siblings of the given navigator"
+  [navigator]
+  (concat (reverse (previous-siblings navigator)) (next-siblings navigator)))
 
 (defn children
   [navigator]
@@ -90,7 +104,19 @@
 (defn text
   "Return all descendent text content below the given navigator as one string."
   [navigator]
-  (s/join " " (text-descendants navigator)))
+  (when-let [texts (seq (text-descendants navigator))]
+    (s/join " " texts)))
+
+(defn token-type
+  [navigator]
+  (let [type-int (.getTokenType navigator (.getCurrentIndex navigator))]
+    (condp = type-int
+      VTDNav/TOKEN_STARTING_TAG :starting-tag
+      VTDNav/TOKEN_DOCUMENT     :document
+      VTDNav/TOKEN_ATTR_NAME    :attr-name
+      VTDNav/TOKEN_ATTR_NS      :attr-ns
+      VTDNav/TOKEN_ATTR_VAL     :attr-val
+      VTDNav/TOKEN_ENDING_TAG   :ending-tag)))
 
 (defn- xpath-seq
   [navigator autopilot]

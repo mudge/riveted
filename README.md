@@ -1,6 +1,6 @@
 # riveted [![Build Status](https://travis-ci.org/mudge/riveted.png?branch=master)](https://travis-ci.org/mudge/riveted)
 
-A work-in-progress Clojure interface for parsing XML with
+A Clojure interface for parsing XML with
 [VTD-XML](http://vtd-xml.sourceforge.net).
 
 It provides a more Clojure-like abstraction over VTD while still exposing the
@@ -18,7 +18,7 @@ following to your [Leiningen](https://github.com/technomancy/leiningen)
 dependencies:
 
 ```clojure
-[riveted "0.0.1"]
+[riveted "0.0.2"]
 ```
 
 ## Usage
@@ -70,6 +70,11 @@ dependencies:
 ;=> return a lazy sequence of all children elements (note this does not
 ;   include text nodes)
 ```
+
+## To Do
+
+* Namespace-awareness;
+* Zipper helper.
 
 ## Acknowledgements
 
