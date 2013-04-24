@@ -81,7 +81,7 @@
 
 (defn- text-descendant-indices
   [navigator]
-  (sort (concat (text-indices navigator) (lazy-seq (mapcat text-descendant-indices (children navigator))))))
+  (sort (concat (text-indices navigator) (mapcat text-descendant-indices (children navigator)))))
 
 (defn- text-descendants
   [navigator]
