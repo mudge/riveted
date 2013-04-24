@@ -47,22 +47,19 @@
 
 (defn siblings
   [navigator]
-  (if-let [sibling (next-sibling navigator)]
-    (cons sibling (lazy-seq (siblings sibling)))
-    []))
+  (when-let [sibling (next-sibling navigator)]
+    (cons sibling (lazy-seq (siblings sibling)))))
 
 (defn children
   [navigator]
-  (if-let [child (first-child navigator)]
-    (cons child (siblings child))
-    []))
+  (when-let [child (first-child navigator)]
+    (cons child (siblings child))))
 
 (defn- text-seq
   [text-iter]
   (let [index (.getNext text-iter)]
-    (if (not= index -1)
-      (cons index (lazy-seq (text-seq text-iter)))
-      [])))
+    (when-not (= index -1)
+      (cons index (lazy-seq (text-seq text-iter))))))
 
 (defn- index->text
   [navigator index]
@@ -90,10 +87,9 @@
 (defn- xpath-seq
   [navigator autopilot]
   (let [index (.evalXPath autopilot)]
-    (if-not (= index -1)
+    (when-not (= index -1)
       (cons (.cloneNav navigator)
-            (lazy-seq (xpath-seq navigator autopilot)))
-      [])))
+            (lazy-seq (xpath-seq navigator autopilot))))))
 
 (defn search
   "Search for the given XPath in the navigator, returning all matching navigators."
