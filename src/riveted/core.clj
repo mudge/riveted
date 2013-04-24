@@ -22,6 +22,7 @@
       (.toNormalizedString navigator index))))
 
 (defn fragment
+  "Return a string XML fragment for the given navigator."
   [navigator]
   (let [r (.getContentFragment navigator)]
     (.toString navigator (bit-and r 16rFFFFFF) (bit-shift-right r 32))))
@@ -73,15 +74,11 @@
   (let [iter (doto (TextIter.) (.touch navigator))]
     (text-seq iter)))
 
-(defn- text-children
-  [navigator]
-  (map (partial index->text navigator) (text-indices navigator)))
-
 (defn- text-descendant-indices
   [navigator]
   (sort (concat (text-indices navigator) (lazy-seq (mapcat text-descendant-indices (children navigator))))))
 
-(defn text-descendants
+(defn- text-descendants
   [navigator]
   (map (partial index->text navigator) (text-descendant-indices navigator)))
 
