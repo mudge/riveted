@@ -18,7 +18,7 @@ following to your [Leiningen](https://github.com/technomancy/leiningen)
 dependencies:
 
 ```clojure
-[riveted "0.0.2"]
+[riveted "0.0.3"]
 ```
 
 ## Usage
@@ -54,6 +54,9 @@ dependencies:
 (vtd/parent title)
 ;=> return a navigator for the parent element
 
+(vtd/root title)
+;=> return a navigator for the root element
+
 (vtd/next-sibling title)
 ;=> return a navigator for the next sibling element
 
@@ -64,17 +67,26 @@ dependencies:
 ;=> return a navigator for the last child element
 
 (vtd/siblings title)
-;=> return a lazy sequence of all sibling elements
+;=> return a sequence of all sibling elements
 
 (vtd/children title)
 ;=> return a lazy sequence of all children elements (note this does not
 ;   include text nodes)
+
+(vtd/document? title)
+;=> true if the navigator is pointing to the whole document
+
+(vtd/element? title)
+;=> true if the navigator is pointing to an element
+
+;; Create an initial navigator for the XML document in namespaced.xml with
+;; namespace support enabled.
+(def ns-nav (vtd/navigator (slurp "namespaced.xml") true))
+
+(vtd/search ns-nav "//ns1:name" "ns1" "http://purl.org/dc/elements/1.1/")
+;=> return a lazy sequence of navigators for matching elements with the given
+;   namespace.
 ```
-
-## To Do
-
-* Namespace-awareness;
-* Zipper helper.
 
 ## Acknowledgements
 

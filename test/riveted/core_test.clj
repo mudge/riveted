@@ -3,19 +3,25 @@
         riveted.core))
 
 (def xml "<root><basic-title>Foo</basic-title><complex-title id=\"42\"><i>Foo</i> woo <b>moo</b></complex-title><i>Bar</i><foo/></root>")
+(def ns-xml "<root xmlns:dc=\"http://purl.org/dc/elements/1.1/\"><dc:name>Bob</dc:name></root>")
 
 (def nav (navigator xml false))
+(def ns-nav (navigator ns-xml true))
 
 (deftest test-search
   (testing "Searches by XPath"
     (is (= 1 (count (search nav "/root/basic-title"))))
     (is (= 2 (count (search nav "//i"))))
-    (is (empty? (search nav "/missing")))))
+    (is (empty? (search nav "/missing"))))
+  (testing "Allows searching by XPath with namespaces"
+    (is (= 1 (count (search ns-nav "/root/foo:name" "foo" "http://purl.org/dc/elements/1.1/"))))))
 
 (deftest test-at
   (testing "Searches by XPath, returning the first match"
     (is (= "basic-title" (tag (at nav "/root/basic-title"))))
-    (is (nil? (at nav "/missing")))))
+    (is (nil? (at nav "/missing"))))
+  (testing "Allows searching by XPath with namespaces"
+    (is (= "Bob" (text (at ns-nav "/root/foo:name" "foo" "http://purl.org/dc/elements/1.1/"))))))
 
 (deftest test-text
   (testing "Returns text from simple nodes"
@@ -36,16 +42,21 @@
     (is (= "42" (attr (at nav "/root/complex-title") "id")))
     (is (nil? (attr (at nav "/root/complex-title") :missing)))))
 
-(deftest test-token-type
-  (testing "Returns the appropriate token type for an element"
-    (is (= :document (token-type (parent (root nav)))))
-    (is (= :starting-tag (token-type (root nav))))))
+(deftest test-document?
+  (testing "Returns true if the navigator is set to the document"
+    (is (document? (parent (root nav))))
+    (is (not (document? (root nav))))))
+
+(deftest test-element?
+  (testing "Returns true if the navigator is set to an element"
+    (is (element? (root nav)))
+    (is (not (element? (parent (root nav)))))))
 
 (deftest test-parent
   (testing "Returns a navigator for the parent element"
     (is (= "root" (tag (parent (at nav "/root/basic-title"))))))
   (testing "Returns the document when asking the parent of the root"
-    (is (= :document (token-type (parent (root nav))))))
+    (is (document? (parent (root nav)))))
   (testing "Returns nil when asking for the parent of the document"
     (is (nil? (parent (parent (root nav)))))))
 

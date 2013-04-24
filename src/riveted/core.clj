@@ -107,16 +107,17 @@
   (when-let [texts (seq (text-descendants navigator))]
     (s/join " " texts)))
 
-(defn token-type
+(defn- token-type
   [navigator]
-  (let [type-int (.getTokenType navigator (.getCurrentIndex navigator))]
-    (condp = type-int
-      VTDNav/TOKEN_STARTING_TAG :starting-tag
-      VTDNav/TOKEN_DOCUMENT     :document
-      VTDNav/TOKEN_ATTR_NAME    :attr-name
-      VTDNav/TOKEN_ATTR_NS      :attr-ns
-      VTDNav/TOKEN_ATTR_VAL     :attr-val
-      VTDNav/TOKEN_ENDING_TAG   :ending-tag)))
+  (.getTokenType navigator (.getCurrentIndex navigator)))
+
+(defn element?
+  [navigator]
+  (= VTDNav/TOKEN_STARTING_TAG (token-type navigator)))
+
+(defn document?
+  [navigator]
+  (= VTDNav/TOKEN_DOCUMENT (token-type navigator)))
 
 (defn- xpath-seq
   [navigator autopilot]
@@ -127,12 +128,18 @@
 
 (defn search
   "Search for the given XPath in the navigator, returning all matching navigators."
-  [navigator xpath]
-  (let [navigator' (.cloneNav navigator)
-        autopilot (doto (AutoPilot. navigator') (.selectXPath xpath))]
-    (xpath-seq navigator' autopilot)))
+  ([navigator xpath]
+    (let [navigator' (.cloneNav navigator)
+          autopilot (doto (AutoPilot. navigator') (.selectXPath xpath))]
+      (xpath-seq navigator' autopilot)))
+  ([navigator xpath prefix url]
+    (let [navigator' (.cloneNav navigator)
+          autopilot (doto (AutoPilot. navigator')
+                          (.declareXPathNameSpace prefix url)
+                          (.selectXPath xpath))]
+      (xpath-seq navigator' autopilot))))
 
 (defn at
   "Search for the given XPath in the navigator, returning the first matching navigator."
-  [navigator xpath]
-  (first (search navigator xpath)))
+  [& args]
+  (first (apply search args)))
