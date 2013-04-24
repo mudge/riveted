@@ -11,6 +11,16 @@ Note that, unlike most XML libraries, you use selectors to return navigators
 (viz. a cursor to a point within the document) that can then be interrogated
 for their tag name, attributes and text values with other functions.
 
+## Installation
+
+As riveted is available on [Clojars](https://clojars.org/riveted), add the
+following to your [Leiningen](https://github.com/technomancy/leiningen)
+dependencies:
+
+```clojure
+[riveted "0.0.1"]
+```
+
 ## Usage
 
 ```clojure
