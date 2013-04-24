@@ -90,10 +90,18 @@
   (testing "Returns all sibling elements"
     (is (= ["complex-title" "i" "foo"] (map tag (siblings (at nav "/root/basic-title")))))
     (is (= ["basic-title" "i" "foo"] (map tag (siblings (at nav "/root/complex-title")))))
-    (is (= ["basic-title" "complex-title" "foo"] (map tag (siblings (at nav "/root/i")))))))
+    (is (= ["basic-title" "complex-title" "foo"] (map tag (siblings (at nav "/root/i")))))
+    (is (nil? (siblings (root nav))))))
 
 (deftest test-children
   (testing "Returns all child elements"
     (is (= ["basic-title" "complex-title" "i" "foo"]
            (map tag (children (root nav)))))
     (is (nil? (children (at nav "/root/foo"))))))
+
+(deftest test-attr?
+  (testing "Checks whether a given attribute exists on an element"
+    (is (attr? (at nav "/root/complex-title") :id))
+    (is (attr? (at nav "/root/complex-title") "id"))
+    (is (not (attr? (at nav "/root/complex-title") :missing)))))
+

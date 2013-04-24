@@ -48,6 +48,10 @@ dependencies:
 (vtd/attr title :id)
 ;=> "123"
 
+(vtd/attr? title :id)
+;=> true when the element under the navigator has an attribute with the given
+;   name
+
 (vtd/fragment title)
 ;=> "<b>Some</b> title"
 

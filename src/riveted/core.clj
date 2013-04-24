@@ -21,6 +21,11 @@
     (when (not= index -1)
       (.toNormalizedString navigator index))))
 
+(defn attr?
+  "Test whether the given attribute exists on the current element."
+  [navigator attr-name]
+  (.hasAttr navigator (name attr-name)))
+
 (defn fragment
   "Return a string XML fragment for the given navigator."
   [navigator]
@@ -68,9 +73,12 @@
     (cons sibling (lazy-seq (previous-siblings sibling)))))
 
 (defn siblings
-  "Return all siblings of the given navigator"
+  "Return all siblings of the given navigator."
   [navigator]
-  (concat (reverse (previous-siblings navigator)) (next-siblings navigator)))
+  (let [left  (reverse (previous-siblings navigator))
+        right (next-siblings navigator)]
+    (when (or (seq left) (seq right))
+      (concat left right))))
 
 (defn children
   [navigator]
