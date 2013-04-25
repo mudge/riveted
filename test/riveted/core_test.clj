@@ -67,37 +67,62 @@
 (deftest test-first-child
   (testing "Returns a navigator for the first child element"
     (is (= "i" (tag (first-child (at nav "/root/complex-title")))))
-    (is (nil? (first-child (at nav "/root/foo"))))))
+    (is (nil? (first-child (at nav "/root/foo")))))
+  (testing "Takes an optional element name"
+    (is (= "complex-title" (tag (first-child (root nav) :complex-title))))
+    (is (= "complex-title" (tag (first-child (root nav) "complex-title"))))
+    (is (nil? (first-child (root nav) :missing)))))
 
 (deftest test-last-child
   (testing "Returns a navigator for the last child element"
     (is (= "b" (tag (last-child (at nav "/root/complex-title")))))
-    (is (nil? (last-child (at nav "/root/foo"))))))
+    (is (nil? (last-child (at nav "/root/foo")))))
+  (testing "Takes an optional element name"
+    (is (= "complex-title" (tag (last-child (root nav) :complex-title))))
+    (is (= "complex-title" (tag (last-child (root nav) "complex-title"))))
+    (is (nil? (last-child (root nav) :missing)))))
 
 (deftest test-next-sibling
   (testing "Returns the next sibling element"
     (is (= "complex-title" (tag (next-sibling (at nav "/root/basic-title")))))
     (is (= "i" (tag (next-sibling (at nav "/root/complex-title")))))
-    (is (nil? (next-sibling (at nav "/root/foo"))))))
+    (is (nil? (next-sibling (at nav "/root/foo")))))
+  (testing "Takes an optional element name"
+    (is (= "i" (tag (next-sibling (at nav "/root/basic-title") :i))))
+    (is (= "i" (tag (next-sibling (at nav "/root/basic-title") "i"))))
+    (is (nil? (next-sibling (at nav "/root/basic-title") :missing)))))
 
 (deftest test-previous-sibling
   (testing "Returns the previous sibling element"
     (is (= "basic-title" (tag (previous-sibling (at nav "/root/complex-title")))))
     (is (= "i" (tag (previous-sibling (at nav "/root/foo")))))
-    (is (nil? (previous-sibling (at nav "/root/basic-title"))))))
+    (is (nil? (previous-sibling (at nav "/root/basic-title")))))
+  (testing "Takes an optional element name"
+    (is (= "basic-title" (tag (previous-sibling (at nav "/root/i") :basic-title))))
+    (is (= "basic-title" (tag (previous-sibling (at nav "/root/i") "basic-title"))))
+    (is (nil? (previous-sibling (at nav "/root/i") :missing)))))
 
 (deftest test-siblings
   (testing "Returns all sibling elements"
     (is (= ["complex-title" "i" "foo"] (map tag (siblings (at nav "/root/basic-title")))))
     (is (= ["basic-title" "i" "foo"] (map tag (siblings (at nav "/root/complex-title")))))
     (is (= ["basic-title" "complex-title" "foo"] (map tag (siblings (at nav "/root/i")))))
-    (is (nil? (siblings (root nav))))))
+    (is (nil? (siblings (root nav)))))
+  (testing "Takes an optional element name"
+    (is (= ["complex-title"] (map tag (siblings (at nav "/root/basic-title") :complex-title))))
+    (is (= ["complex-title"]
+           (map tag (siblings (at nav "/root/basic-title") "complex-title"))))
+    (is (nil? (siblings (at nav "/root/basic-title") :missing)))))
 
 (deftest test-children
   (testing "Returns all child elements"
     (is (= ["basic-title" "complex-title" "i" "foo"]
            (map tag (children (root nav)))))
-    (is (nil? (children (at nav "/root/foo"))))))
+    (is (nil? (children (at nav "/root/foo")))))
+  (testing "Takes an optional element name"
+    (is (= ["complex-title"] (map tag (children (root nav) :complex-title)))))
+    (is (= ["complex-title"] (map tag (children (root nav) "complex-title"))))
+    (is (nil? (children (root nav) :missing))))
 
 (deftest test-attr?
   (testing "Checks whether a given attribute exists on an element"

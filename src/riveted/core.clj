@@ -33,57 +33,75 @@
     (.toString navigator (bit-and r 16rFFFFFF) (bit-shift-right r 32))))
 
 (defn- navigate
-  [navigator direction]
-  (let [navigator' (.cloneNav navigator)]
-    (when (.toElement navigator' direction)
-      navigator')))
+  ([navigator direction]
+    (let [navigator' (.cloneNav navigator)]
+      (when (.toElement navigator' direction)
+        navigator')))
+  ([navigator direction element]
+    (let [navigator' (.cloneNav navigator)]
+      (when (.toElement navigator' direction (name element))
+        navigator'))))
 
 (defn next-sibling
-  [navigator]
-  (navigate navigator VTDNav/NEXT_SIBLING))
+  ([navigator]         (navigate navigator VTDNav/NEXT_SIBLING))
+  ([navigator element] (navigate navigator VTDNav/NEXT_SIBLING element)))
 
 (defn previous-sibling
-  [navigator]
-  (navigate navigator VTDNav/PREV_SIBLING))
+  ([navigator]         (navigate navigator VTDNav/PREV_SIBLING))
+  ([navigator element] (navigate navigator VTDNav/PREV_SIBLING element)))
 
 (defn parent
   [navigator]
   (navigate navigator VTDNav/PARENT))
 
 (defn first-child
-  [navigator]
-  (navigate navigator VTDNav/FIRST_CHILD))
+  ([navigator]         (navigate navigator VTDNav/FIRST_CHILD))
+  ([navigator element] (navigate navigator VTDNav/FIRST_CHILD element)))
 
 (defn last-child
-  [navigator]
-  (navigate navigator VTDNav/LAST_CHILD))
+  ([navigator]         (navigate navigator VTDNav/LAST_CHILD))
+  ([navigator element] (navigate navigator VTDNav/LAST_CHILD element)))
 
 (defn root
   [navigator]
   (navigate navigator VTDNav/ROOT))
 
 (defn- next-siblings
-  [navigator]
-  (when-let [sibling (next-sibling navigator)]
-    (cons sibling (lazy-seq (next-siblings sibling)))))
+  ([navigator]
+    (when-let [sibling (next-sibling navigator)]
+      (cons sibling (lazy-seq (next-siblings sibling)))))
+  ([navigator element]
+    (when-let [sibling (next-sibling navigator element)]
+      (cons sibling (lazy-seq (next-siblings sibling element))))))
 
 (defn- previous-siblings
-  [navigator]
-  (when-let [sibling (previous-sibling navigator)]
-    (cons sibling (lazy-seq (previous-siblings sibling)))))
+  ([navigator]
+    (when-let [sibling (previous-sibling navigator)]
+      (cons sibling (lazy-seq (previous-siblings sibling)))))
+  ([navigator element]
+    (when-let [sibling (previous-sibling navigator element)]
+      (cons sibling (lazy-seq (previous-siblings sibling element))))))
 
 (defn siblings
   "Return all siblings of the given navigator."
-  [navigator]
-  (let [left  (reverse (previous-siblings navigator))
-        right (next-siblings navigator)]
-    (when (or (seq left) (seq right))
-      (concat left right))))
+  ([navigator]
+    (let [left  (reverse (previous-siblings navigator))
+          right (next-siblings navigator)]
+      (when (or (seq left) (seq right))
+        (concat left right))))
+  ([navigator element]
+    (let [left  (reverse (previous-siblings navigator element))
+          right (next-siblings navigator element)]
+      (when (or (seq left) (seq right))
+        (concat left right)))))
 
 (defn children
-  [navigator]
-  (when-let [child (first-child navigator)]
-    (cons child (siblings child))))
+  ([navigator]
+    (when-let [child (first-child navigator)]
+      (cons child (siblings child))))
+  ([navigator element]
+    (when-let [child (first-child navigator element)]
+      (cons child (siblings child element)))))
 
 (defn- text-seq
   [text-iter]

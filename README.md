@@ -64,18 +64,33 @@ dependencies:
 (vtd/next-sibling title)
 ;=> return a navigator for the next sibling element
 
+(vtd/next-sibling title :author)
+;=> return a navigator for the next sibling "author" element
+
 (vtd/first-child title)
 ;=> return a navigator for the first child element
+
+(vtd/first-child title :b)
+;=> return a navigator for the first child "b" element
 
 (vtd/last-child title)
 ;=> return a navigator for the last child element
 
+(vtd/last-child title :i)
+;=> return a navigator for the last child "i" element
+
 (vtd/siblings title)
 ;=> return a sequence of all sibling elements
+
+(vtd/siblings title :span)
+;=> return a sequence of all sibling "span" elements
 
 (vtd/children title)
 ;=> return a lazy sequence of all children elements (note this does not
 ;   include text nodes)
+
+(vtd/children title :p)
+;=> return a lazy sequence of all children "p" elements
 
 (vtd/document? title)
 ;=> true if the navigator is pointing to the whole document
