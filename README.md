@@ -18,7 +18,7 @@ following to your [Leiningen](https://github.com/technomancy/leiningen)
 dependencies:
 
 ```clojure
-[riveted "0.0.3"]
+[riveted "0.0.4"]
 ```
 
 ## Usage
@@ -44,6 +44,9 @@ dependencies:
 
 (vtd/text title)
 ;=> "Some title"
+;   (note that this will include *all* descendant text nodes
+;   regardless of mixed content so title could have been
+;   "<article-title><italic>Some</italic> title</article-title>")
 
 (vtd/attr title :id)
 ;=> "123"

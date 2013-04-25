@@ -96,6 +96,7 @@
         (concat left right)))))
 
 (defn children
+  "Return all children nodes of the given navigator."
   ([navigator]
     (when-let [child (first-child navigator)]
       (cons child (siblings child))))
