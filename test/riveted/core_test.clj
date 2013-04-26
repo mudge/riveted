@@ -23,6 +23,11 @@
   (testing "Allows searching by XPath with namespaces"
     (is (= "Bob" (text (at ns-nav "/root/foo:name" "foo" "http://purl.org/dc/elements/1.1/"))))))
 
+(deftest test-navigate
+  (testing "Only supports valid directions"
+    (is (thrown? AssertionError (navigate nav -2)))
+    (is (thrown? AssertionError (navigate nav 7)))))
+
 (deftest test-text
   (testing "Returns text from simple nodes"
     (is (= "Foo" (text (at nav "/root/basic-title")))))
