@@ -4,40 +4,40 @@
 
 (defn navigator
   "Given an XML string, parse and return a new VTD navigator."
-  [xml namespace-aware]
+  [^String xml namespace-aware]
   (let [vg (doto (VTDGen.) (.setDoc (.getBytes xml)) (.parse namespace-aware))]
     (.getNav vg)))
 
 (defn tag
   "Given a VTD navigator, return the tag name."
-  [navigator]
+  [^VTDNav navigator]
   (let [index (.getCurrentIndex navigator)]
     (.toString navigator index)))
 
 (defn attr
   "Return the value of the named attribute for the given navigator."
-  [navigator attr-name]
+  [^VTDNav navigator attr-name]
   (let [index (.getAttrVal navigator (name attr-name))]
     (when (not= index -1)
       (.toNormalizedString navigator index))))
 
 (defn attr?
   "Test whether the given attribute exists on the current element."
-  [navigator attr-name]
+  [^VTDNav navigator attr-name]
   (.hasAttr navigator (name attr-name)))
 
 (defn fragment
   "Return a string XML fragment for the given navigator."
-  [navigator]
+  [^VTDNav navigator]
   (let [r (.getContentFragment navigator)]
     (.toString navigator (bit-and r 16rFFFFFF) (bit-shift-right r 32))))
 
 (defn- navigate
-  ([navigator direction]
+  ([^VTDNav navigator direction]
     (let [navigator' (.cloneNav navigator)]
       (when (.toElement navigator' direction)
         navigator')))
-  ([navigator direction element]
+  ([^VTDNav navigator direction element]
     (let [navigator' (.cloneNav navigator)]
       (when (.toElement navigator' direction (name element))
         navigator'))))
@@ -105,13 +105,13 @@
       (cons child (siblings child element)))))
 
 (defn- text-seq
-  [text-iter]
+  [^TextIter text-iter]
   (let [index (.getNext text-iter)]
     (when-not (= index -1)
       (cons index (lazy-seq (text-seq text-iter))))))
 
 (defn- index->text
-  [navigator index]
+  [^VTDNav navigator index]
   (when (not= index -1)
     (.toNormalizedString navigator index)))
 
@@ -135,7 +135,7 @@
     (s/join " " texts)))
 
 (defn- token-type
-  [navigator]
+  [^VTDNav navigator]
   (.getTokenType navigator (.getCurrentIndex navigator)))
 
 (defn element?
@@ -147,7 +147,7 @@
   (= VTDNav/TOKEN_DOCUMENT (token-type navigator)))
 
 (defn- xpath-seq
-  [navigator autopilot]
+  [^VTDNav navigator ^AutoPilot autopilot]
   (let [index (.evalXPath autopilot)]
     (when-not (= index -1)
       (cons (.cloneNav navigator)
@@ -155,11 +155,11 @@
 
 (defn search
   "Search for the given XPath in the navigator, returning all matching navigators."
-  ([navigator xpath]
+  ([^VTDNav navigator xpath]
     (let [navigator' (.cloneNav navigator)
           autopilot (doto (AutoPilot. navigator') (.selectXPath xpath))]
       (xpath-seq navigator' autopilot)))
-  ([navigator xpath prefix url]
+  ([^VTDNav navigator xpath prefix url]
     (let [navigator' (.cloneNav navigator)
           autopilot (doto (AutoPilot. navigator')
                           (.declareXPathNameSpace prefix url)
