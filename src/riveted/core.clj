@@ -469,6 +469,31 @@
                           (.selectXPath xpath))]
       (xpath-seq navigator' autopilot))))
 
+(defn- select-seq
+  "Private. Returns a lazy sequence of navigators exhaustively iterating through
+  nodes with the given navigator and AutoPilot."
+  [^VTDNav navigator ^AutoPilot autopilot]
+  (when (.iterate autopilot)
+    (cons (.cloneNav navigator)
+          (lazy-seq (select-seq navigator autopilot)))))
+
+(defn select
+  "Return a lazy sequence of navigators matching the given element name, * can
+  be used to match all elements.
+
+  Examples:
+
+    ; Returns navigators for each element in nav.
+    (select nav \"*\")
+
+    ; Returns navigators for all b elements in nav.
+    (select nav \"b\")"
+  [^VTDNav navigator element]
+  (let [navigator' (.cloneNav navigator)
+        autopilot (doto (AutoPilot. navigator')
+                        (.selectElement (name element)))]
+    (select-seq navigator' autopilot)))
+
 (defn at
   "Search for the given XPath in the navigator, returning the first matching
   navigator. If used with a namespace aware navigator, also takes a namespace

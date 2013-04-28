@@ -32,11 +32,19 @@ dependencies:
 
 (def bold-words
   (vtd/search nav "//b"))
-;=> returns a lazy sequence of navigators for each matching element
+;=> returns a lazy sequence of navigators for each matching element by XPath
 
 (def title
   (vtd/at nav "/article/front/article-meta/title-group/article-title"))
-;=> returns another navigator that can be interrogated...
+;=> returns the first navigator that can be interrogated...
+
+(def italic-words
+  (vtd/select nav :i))
+;=> returns a lazy sequence of navigators for each matching element by name
+
+(def all-elements
+  (vtd/select nav "*"))
+;=> returns a lazy sequence of all elements
 
 (vtd/tag title)
 ;=> "article-title"

@@ -28,6 +28,13 @@
   (at nav "/missing") => nil?
   (at ns-nav "/root/foo:name" "foo" "http://purl.org/dc/elements/1.1/") => nav?)
 
+(fact "select returns navigators for all matching elements."
+  (select nav "*") => (tags? "root" "basic-title" "complex-title" "i" "b" "i" "foo")
+  (select nav "i") => (two-of (tag? "i"))
+  (select nav :i) => (two-of (tag? "i"))
+  (select (at nav "/root/complex-title") "*") => (tags? "complex-title" "i" "b")
+  (select nav "missing") => nil?)
+
 (fact "text returns the text nodes descending from a navigator."
   (text (at nav "/root/basic-title")) => "Foo"
   (text (at nav "/root/complex-title")) => "Foo woo moo"
