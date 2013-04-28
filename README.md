@@ -27,8 +27,7 @@ dependencies:
 (ns foo
   (:require [riveted.core :as vtd]))
 
-;; Create an initial navigator for the XML document in foo.xml (the second
-;; argument toggles namespace awareness).
+;; Create an initial navigator for the XML document in foo.xml
 (def nav (vtd/navigator (slurp "foo.xml")))
 
 (def bold-words
@@ -133,32 +132,32 @@ dependencies:
 ## Mutable Interface
 
 riveted also provides a mutable interface to VTDNav (much like Clojure's
-[transient](http://clojure.org/transients)) data structures) for lower-memory
+[transient](http://clojure.org/transients) data structures) for lower-memory
 usage (at the cost of immutability):
 
 ```clojure
-; Create an initial navigator as per usual.
+;; Create an initial navigator as per usual.
 (def nav (navigator "<root><a>Foo</a><b>Bar</b></root>"))
 
-; Mutate nav to point to the a element.
+;; Mutate nav to point to the a element.
 (vtd/first-child! nav)
 
 (vtd/text nav)
 ;=> "Foo"
 
-; Mutate nav to point to the b element.
+;; Mutate nav to point to the b element.
 (vtd/next-sibling! nav)
 
 (vtd/text nav)
 ;=> "Bar"
 
-; Mutate nav to point to the a element again.
+;; Mutate nav to point to the a element again.
 (vtd/previous-sibling! nav)
 
-; Mutate nav to point to the root element.
+;; Mutate nav to point to the root element.
 (vtd/parent! nav)
 
-; Mutate nav to point to the root of the document (regardless of location).
+;; Mutate nav to point to the root of the document (regardless of location).
 (vtd/root! nav)
 ```
 
