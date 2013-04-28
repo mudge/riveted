@@ -1,6 +1,8 @@
 (ns riveted.core-test
-  (:use clojure.test
-        riveted.core))
+  (:use midje.sweet riveted.core)
+  (:import com.ximpleware.VTDNav))
+
+;;; Test data.
 
 (def xml "<root><basic-title>Foo</basic-title><complex-title id=\"42\"><i>Foo</i> woo <b>moo</b></complex-title><i>Bar</i><foo/></root>")
 (def ns-xml "<root xmlns:dc=\"http://purl.org/dc/elements/1.1/\"><dc:name>Bob</dc:name></root>")
@@ -8,130 +10,184 @@
 (def nav (navigator xml false))
 (def ns-nav (navigator ns-xml true))
 
-(deftest test-search
-  (testing "Searches by XPath"
-    (is (= 1 (count (search nav "/root/basic-title"))))
-    (is (= 2 (count (search nav "//i"))))
-    (is (empty? (search nav "/missing"))))
-  (testing "Allows searching by XPath with namespaces"
-    (is (= 1 (count (search ns-nav "/root/foo:name" "foo" "http://purl.org/dc/elements/1.1/"))))))
+;;; Custom checkers to simplify testing.
 
-(deftest test-at
-  (testing "Searches by XPath, returning the first match"
-    (is (= "basic-title" (tag (at nav "/root/basic-title"))))
-    (is (nil? (at nav "/missing"))))
-  (testing "Allows searching by XPath with namespaces"
-    (is (= "Bob" (text (at ns-nav "/root/foo:name" "foo" "http://purl.org/dc/elements/1.1/"))))))
+(defn nav? [actual] (instance? VTDNav actual))
+(defn tag? [tag-name] (fn [actual] (= tag-name (tag actual))))
+(defn tags? [& tag-names] (fn [actual] (= tag-names (map tag actual))))
+(def root? (tag? "root"))
 
-(deftest test-navigate
-  (testing "Only supports valid directions"
-    (is (thrown? AssertionError (navigate nav -2)))
-    (is (thrown? AssertionError (navigate nav 7)))))
+(fact "search returns a sequence of matching navigators for a given XPath."
+  (search nav "/root/basic-title") => (one-of nav?)
+  (search nav "//i") => (two-of nav?)
+  (search nav "/missing") => empty?
+  (search ns-nav "/root/foo:name" "foo" "http://purl.org/dc/elements/1.1/") => (one-of nav?))
 
-(deftest test-text
-  (testing "Returns text from simple nodes"
-    (is (= "Foo" (text (at nav "/root/basic-title")))))
-  (testing "Returns all text from mixed content nodes"
-    (is (= "Foo woo moo" (text (at nav "/root/complex-title")))))
-  (testing "Returns nil for empty nodes"
-    (is (nil? (text (at nav "/root/foo"))))))
+(fact "at returns the first matching navigator for a given XPath."
+  (at nav "/root/basic-title") => nav?
+  (at nav "/missing") => nil?
+  (at ns-nav "/root/foo:name" "foo" "http://purl.org/dc/elements/1.1/") => nav?)
 
-(deftest test-fragment
-  (testing "Returns a content fragment for the contents of the given node"
-    (is (= "<i>Foo</i> woo <b>moo</b>" (fragment (at nav "/root/complex-title"))))
-    (is (= "Foo" (fragment (at nav "/root/basic-title"))))))
+(fact "text returns the text nodes descending from a navigator."
+  (text (at nav "/root/basic-title")) => "Foo"
+  (text (at nav "/root/complex-title")) => "Foo woo moo"
+  (text (at nav "/root/foo")) => nil?)
 
-(deftest test-attr
-  (testing "Returns the value of the given attribute"
-    (is (= "42" (attr (at nav "/root/complex-title") :id)))
-    (is (= "42" (attr (at nav "/root/complex-title") "id")))
-    (is (nil? (attr (at nav "/root/complex-title") :missing)))))
+(fact "fragment returns the content of the given navigator as an XML fragment."
+  (fragment (at nav "/root/complex-title")) => "<i>Foo</i> woo <b>moo</b>"
+  (fragment (at nav "/root/basic-title")) => "Foo")
 
-(deftest test-document?
-  (testing "Returns true if the navigator is set to the document"
-    (is (document? (parent (root nav))))
-    (is (not (document? (root nav))))))
+(fact "attr returns the value of the given attribute"
+  (attr (at nav "/root/complex-title") :id) => "42"
+  (attr (at nav "/root/complex-title") "id") => "42"
+  (attr (at nav "/root/complex-title") :missing) => nil?)
 
-(deftest test-element?
-  (testing "Returns true if the navigator is set to an element"
-    (is (element? (root nav)))
-    (is (not (element? (parent (root nav)))))))
+(fact "tag returns the current element name of the given navigator."
+  (tag (root nav)) => "root"
+  (tag (at nav "/root/complex-title")) => "complex-title")
 
-(deftest test-parent
-  (testing "Returns a navigator for the parent element"
-    (is (= "root" (tag (parent (at nav "/root/basic-title"))))))
-  (testing "Returns the document when asking the parent of the root"
-    (is (document? (parent (root nav)))))
-  (testing "Returns nil when asking for the parent of the document"
-    (is (nil? (parent (parent (root nav)))))))
+(fact "document? returns true if the navigator is set to the document."
+  (parent (root nav)) => document?
+  (root nav) =not=> document?)
 
-(deftest test-root
-  (testing "Returns a navigator for the root element"
-    (is (= "root" (tag (root (at nav "/root/complex-title/i")))))))
+(fact "element? returns true if the navigator is set to an element."
+  (root nav) => element?
+  (parent (root nav)) =not=> element?)
 
-(deftest test-first-child
-  (testing "Returns a navigator for the first child element"
-    (is (= "i" (tag (first-child (at nav "/root/complex-title")))))
-    (is (nil? (first-child (at nav "/root/foo")))))
-  (testing "Takes an optional element name"
-    (is (= "complex-title" (tag (first-child (root nav) :complex-title))))
-    (is (= "complex-title" (tag (first-child (root nav) "complex-title"))))
-    (is (nil? (first-child (root nav) :missing)))))
+(fact "parent returns a navigator for the parent of the current navigator."
+  (parent (at nav "/root/basic-title")) => nav?)
 
-(deftest test-last-child
-  (testing "Returns a navigator for the last child element"
-    (is (= "b" (tag (last-child (at nav "/root/complex-title")))))
-    (is (nil? (last-child (at nav "/root/foo")))))
-  (testing "Takes an optional element name"
-    (is (= "complex-title" (tag (last-child (root nav) :complex-title))))
-    (is (= "complex-title" (tag (last-child (root nav) "complex-title"))))
-    (is (nil? (last-child (root nav) :missing)))))
+(fact "parent returns the document as the parent of the root."
+  (parent (root nav)) => document?)
 
-(deftest test-next-sibling
-  (testing "Returns the next sibling element"
-    (is (= "complex-title" (tag (next-sibling (at nav "/root/basic-title")))))
-    (is (= "i" (tag (next-sibling (at nav "/root/complex-title")))))
-    (is (nil? (next-sibling (at nav "/root/foo")))))
-  (testing "Takes an optional element name"
-    (is (= "i" (tag (next-sibling (at nav "/root/basic-title") :i))))
-    (is (= "i" (tag (next-sibling (at nav "/root/basic-title") "i"))))
-    (is (nil? (next-sibling (at nav "/root/basic-title") :missing)))))
+(fact "parent returns nil for the parent of the document."
+  (parent (parent (root nav))) => nil?)
 
-(deftest test-previous-sibling
-  (testing "Returns the previous sibling element"
-    (is (= "basic-title" (tag (previous-sibling (at nav "/root/complex-title")))))
-    (is (= "i" (tag (previous-sibling (at nav "/root/foo")))))
-    (is (nil? (previous-sibling (at nav "/root/basic-title")))))
-  (testing "Takes an optional element name"
-    (is (= "basic-title" (tag (previous-sibling (at nav "/root/i") :basic-title))))
-    (is (= "basic-title" (tag (previous-sibling (at nav "/root/i") "basic-title"))))
-    (is (nil? (previous-sibling (at nav "/root/i") :missing)))))
+(fact "root returns a navigator for the root element."
+  (root (at nav "/root/complex-title/i")) => nav?
+  (root (at nav "/root/complex-title/i")) => root?)
 
-(deftest test-siblings
-  (testing "Returns all sibling elements"
-    (is (= ["complex-title" "i" "foo"] (map tag (siblings (at nav "/root/basic-title")))))
-    (is (= ["basic-title" "i" "foo"] (map tag (siblings (at nav "/root/complex-title")))))
-    (is (= ["basic-title" "complex-title" "foo"] (map tag (siblings (at nav "/root/i")))))
-    (is (nil? (siblings (root nav)))))
-  (testing "Takes an optional element name"
-    (is (= ["complex-title"] (map tag (siblings (at nav "/root/basic-title") :complex-title))))
-    (is (= ["complex-title"]
-           (map tag (siblings (at nav "/root/basic-title") "complex-title"))))
-    (is (nil? (siblings (at nav "/root/basic-title") :missing)))))
+(fact "first-child returns a navigator for the first child element."
+  (first-child (at nav "/root/complex-title")) => nav?
+  (first-child (at nav "/root/complex-title")) => (tag? "i")
+  (first-child (at nav "/root/foo")) => nil?)
 
-(deftest test-children
-  (testing "Returns all child elements"
-    (is (= ["basic-title" "complex-title" "i" "foo"]
-           (map tag (children (root nav)))))
-    (is (nil? (children (at nav "/root/foo")))))
-  (testing "Takes an optional element name"
-    (is (= ["complex-title"] (map tag (children (root nav) :complex-title)))))
-    (is (= ["complex-title"] (map tag (children (root nav) "complex-title"))))
-    (is (nil? (children (root nav) :missing))))
+(fact "first-child takes an optional element name."
+  (first-child (root nav) :complex-title) => (tag? "complex-title")
+  (first-child (root nav) "complex-title") => (tag? "complex-title")
+  (first-child (root nav) :missing) => nil?)
 
-(deftest test-attr?
-  (testing "Checks whether a given attribute exists on an element"
-    (is (attr? (at nav "/root/complex-title") :id))
-    (is (attr? (at nav "/root/complex-title") "id"))
-    (is (not (attr? (at nav "/root/complex-title") :missing)))))
+(fact "last-child returns a navigator for the last child element."
+  (last-child (at nav "/root/complex-title")) => (tag? "b")
+  (last-child (at nav "/root/foo")) => nil?)
+
+(fact "last-child takes an optional element name."
+  (last-child (root nav) :complex-title) => (tag? "complex-title")
+  (last-child (root nav) "complex-title") => (tag? "complex-title")
+  (last-child (root nav) :missing) => nil?)
+
+(fact "next-sibling returns a navigator for the next sibling element."
+  (next-sibling (at nav "/root/basic-title")) => (tag? "complex-title")
+  (next-sibling (at nav "/root/complex-title")) => (tag? "i")
+  (next-sibling (at nav "/root/foo")) => nil?)
+
+(fact "next-sibling takes an optional element name."
+  (next-sibling (at nav "/root/basic-title") :i) => (tag? "i")
+  (next-sibling (at nav "/root/basic-title") "i") => (tag? "i")
+  (next-sibling (at nav "/root/basic-title") :missing) => nil?)
+
+(fact "previous-sibling returns a navigator for the previous sibling element."
+  (previous-sibling (at nav "/root/complex-title")) => (tag? "basic-title")
+  (previous-sibling (at nav "/root/foo")) => (tag? "i")
+  (previous-sibling (at nav "/root/basic-title")) => nil?)
+
+(fact "previous-sibling takes an optional element name."
+  (previous-sibling (at nav "/root/i") :basic-title) => (tag? "basic-title")
+  (previous-sibling (at nav "/root/i") "basic-title") => (tag? "basic-title")
+  (previous-sibling (at nav "/root/i") :missing) => nil?)
+
+(fact "next-siblings returns navigators for all next sibling elements."
+  (next-siblings (at nav "/root/basic-title")) => (tags? "complex-title" "i"
+                                                         "foo")
+  (next-siblings (at nav "/root/foo")) => nil?)
+
+(fact "next-siblings takes an optional element name."
+  (next-siblings (at nav "/root/basic-title") :i) => (tags? "i")
+  (next-siblings (at nav "/root/basic-title") "i") => (tags? "i")
+  (next-siblings (at nav "/root/basic-title") :missing) => nil?)
+
+(fact "previous-siblings returns navigators for all previous sibling elements."
+  (previous-siblings (at nav "/root/foo")) => (tags? "i" "complex-title"
+                                                     "basic-title")
+  (previous-siblings (at nav "/root/basic-title")) => nil?)
+
+(fact "previous-siblings takes an optional element name."
+  (previous-siblings (at nav "/root/foo") :i) => (tags? "i")
+  (previous-siblings (at nav "/root/foo") "i") => (tags? "i")
+  (previous-siblings (at nav "/root/foo") :missing) => nil?)
+
+(fact "siblings returns navigators for all sibling elements."
+  (siblings (at nav "/root/basic-title")) => (tags? "complex-title" "i" "foo")
+  (siblings (at nav "/root/complex-title")) => (tags? "basic-title" "i" "foo")
+  (siblings (at nav "/root/i")) => (tags? "basic-title" "complex-title" "foo")
+  (siblings (root nav)) => nil?)
+
+(fact "siblings takes an optional element name."
+  (siblings (at nav "/root/basic-title")
+            :complex-title) => (tags? "complex-title")
+  (siblings (at nav "/root/basic-title")
+            "complex-title") => (tags? "complex-title")
+  (siblings (at nav "/root/basic-title") :missing) => nil?)
+
+(fact "children returns navigators for all children elements."
+  (children (root nav)) => (tags? "basic-title" "complex-title" "i" "foo")
+  (children (at nav "/root/foo")) => nil?)
+
+(fact "children takes an optional element name."
+  (children (root nav) :complex-title) => (tags? "complex-title")
+  (children (root nav) "complex-title") => (tags? "complex-title")
+  (children (root nav) :missing) => nil?)
+
+(fact "attr? returns whether or not a given attribute exists."
+  (attr? (at nav "/root/complex-title") :id) => true
+  (attr? (at nav "/root/complex-title") "id") => true
+  (attr? (at nav "/root/complex-title") :missing) => false)
+
+;;; Mutable tests. Note that the order of these facts is critical.
+
+(def nav! (navigator "<root><child><name>Foo</name><age>42</age></child><bro>Bar</bro></root>" false))
+
+(fact "root! moves the given navigator to the root."
+  (root! nav!) => (tag? "root"))
+
+(fact "first-child! moves the given navigator to the first child."
+  (first-child! nav!) => (tag? "child"))
+
+(fact "first-child! takes an optional element name."
+  (first-child! nav! :name) => (tag? "name")
+  (first-child! nav! :missing) => nil?)
+
+(fact "parent! moves the given navigator to the parent element."
+  (parent! nav!) => (tag? "child"))
+
+(fact "next-sibling! moves to the given navigator to the next sibling element."
+  (next-sibling! nav!) => (tag? "bro")
+  (next-sibling! nav!) => nil?)
+
+(fact "next-sibling! takes an optional element name."
+  (next-sibling! (previous-sibling! nav!) :bro) => (tag? "bro")
+  (next-sibling! (previous-sibling! nav!) "bro") => (tag? "bro")
+  (next-sibling! nav! :missing) => nil?)
+
+(fact "previous-sibling! moves the given navigator to the previous sibling."
+  (previous-sibling! nav!) => (tag? "child")
+  (previous-sibling! nav!) => nil?)
+
+(fact "previous-sibling! takes an optional element name."
+  (previous-sibling! (next-sibling! nav!) :child) => (tag? "child")
+  (previous-sibling! (next-sibling! nav!) "child") => (tag? "child")
+  (previous-sibling! nav! :missing) => nil?)
+
+(fact "last-child! moves the given navigator to the last child."
+  (last-child! nav!) => (tag? "age"))
 

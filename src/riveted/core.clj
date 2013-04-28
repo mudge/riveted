@@ -1,12 +1,12 @@
-(ns ^{:doc "A functional interface for parsing XML with VTD-XML."
+(ns ^{:doc "A Clojure interface for parsing XML with VTD-XML."
       :author "Paul Mucur"}
   riveted.core
   (:require [clojure.string :as s])
   (:import  [com.ximpleware VTDGen VTDNav AutoPilot TextIter]))
 
 (defn navigator
-  "Return a VTD navigator for the given XML string with optional namespace support.
-  If called with only a string of XML, namespace support is disabled.
+  "Return a VTD navigator for the given XML string with optional namespace
+  support.  If called with only a string of XML, namespace support is disabled.
 
   Examples:
 
@@ -22,7 +22,8 @@
      (.getNav vg))))
 
 (defn tag
-  "Return the tag name for the element under the given VTD navigator as a string.
+  "Return the tag name for the element under the given VTD navigator as a
+  string.
 
   Examples:
 
@@ -69,10 +70,10 @@
 
 ;;; Transient interface for navigation.
 
-(defn navigate!
-  "Low level interface to move the given navigator in the given direction
-  (optionally restricting moving to the given element type), mutating it in
-  place.
+(defn- navigate!
+  "Private. Low level interface to move the given navigator in the given
+  direction (optionally restricting moving to the given element type), mutating
+  it in place.
 
   Note that this changes the internal state of the navigator (thereby suffering
   from the usual problems of mutability including concurrency woes) but saves
@@ -128,9 +129,6 @@
 
     ; Move nav to the next sibling b element.
     (next-sibling! nav :b)"
-  {:inline (fn [navigator & args]
-             `(navigate! ~navigator VTDNav/NEXT_SIBLING ~@args))
-   :inline-arities #{1 2}}
   ([navigator]         (navigate! navigator VTDNav/NEXT_SIBLING))
   ([navigator element] (navigate! navigator VTDNav/NEXT_SIBLING element)))
 
@@ -145,9 +143,6 @@
 
     ; Move nav to the previous sibling b element.
     (previous-sibling! nav :b)"
-  {:inline (fn [navigator & args]
-             `(navigate! ~navigator VTDNav/PREV_SIBLING ~@args))
-   :inline-arities #{1 2}}
   ([navigator]         (navigate! navigator VTDNav/PREV_SIBLING))
   ([navigator element] (navigate! navigator VTDNav/PREV_SIBLING element)))
 
@@ -162,9 +157,6 @@
 
     ; Move nav to the first child b element.
     (first-child! nav :b)"
-  {:inline (fn [navigator & args]
-             `(navigate! ~navigator VTDNav/FIRST_CHILD ~@args))
-   :inline-arities #{1 2}}
   ([navigator]         (navigate! navigator VTDNav/FIRST_CHILD))
   ([navigator element] (navigate! navigator VTDNav/FIRST_CHILD element)))
 
@@ -179,18 +171,15 @@
 
     ; Move nav to the last child b element.
     (last-child! nav :b)"
-  {:inline (fn [navigator & args]
-             `(navigate! ~navigator VTDNav/LAST_CHILD ~@args))
-   :inline-arities #{1 2}}
   ([navigator]         (navigate! navigator VTDNav/LAST_CHILD))
   ([navigator element] (navigate! navigator VTDNav/LAST_CHILD element)))
 
 ;;; Immutable interface to navigation.
 
-(defn navigate
-  "Low level interface to return a new navigator based on moving the given one
-  in the given direction (optionally restricting movement to the given element
-  type). Note that this *does not* mutate the existing navigator unlike
+(defn- navigate
+  "Private. Low level interface to return a new navigator based on moving the
+  given one in the given direction (optionally restricting movement to the given
+  element type). Note that this *does not* mutate the existing navigator unlike
   (riveted.core/navigate!).
 
   This relies on cloning the given navigator before moving and therefore will
@@ -217,10 +206,6 @@
   See:
     http://vtd-xml.sourceforge.net/javadoc/com/ximpleware/VTDNav.html
     (riveted.core/navigate!)"
-  {:inline (fn [^VTDNav navigator & args]
-             `(let [navigator# (.cloneNav ~navigator)]
-               (navigate! navigator# ~@args)))
-   :inline-arities #{2 3}}
   ([^VTDNav navigator direction]
     (let [navigator' (.cloneNav navigator)]
       (navigate! navigator' direction)))
@@ -250,9 +235,6 @@
 
     ; Return a new navigator pointing to the next sibling b element of nav.
     (next-sibling nav :b)"
-  {:inline (fn [navigator & args]
-             `(navigate ~navigator VTDNav/NEXT_SIBLING ~@args))
-   :inline-arities #{1 2}}
   ([navigator]         (navigate navigator VTDNav/NEXT_SIBLING))
   ([navigator element] (navigate navigator VTDNav/NEXT_SIBLING element)))
 
@@ -267,9 +249,6 @@
 
     ; Return a new navigator pointing to the previous sibling b element of nav.
     (previous-sibling nav :b)"
-  {:inline (fn [navigator & args]
-             `(navigate ~navigator VTDNav/PREV_SIBLING ~@args))
-   :inline-arities #{1 2}}
   ([navigator]         (navigate navigator VTDNav/PREV_SIBLING))
   ([navigator element] (navigate navigator VTDNav/PREV_SIBLING element)))
 
@@ -284,9 +263,6 @@
 
     ; Return a new navigator pointing to the first child b element of nav.
     (first-child nav :b)"
-  {:inline (fn [navigator & args]
-             `(navigate ~navigator VTDNav/FIRST_CHILD ~@args))
-   :inline-arities #{1 2}}
   ([navigator]         (navigate navigator VTDNav/FIRST_CHILD))
   ([navigator element] (navigate navigator VTDNav/FIRST_CHILD element)))
 
@@ -301,9 +277,6 @@
 
     ; Return a new navigator pointing to the last child b element of nav.
     (last-child nav :b)"
-  {:inline (fn [navigator & args]
-             `(navigate ~navigator VTDNav/LAST_CHILD ~@args))
-   :inline-arities #{1 2}}
   ([navigator]         (navigate navigator VTDNav/LAST_CHILD))
   ([navigator element] (navigate navigator VTDNav/LAST_CHILD element)))
 
@@ -424,7 +397,8 @@
   "Private. Returns an ordered sequence of the indices of all text nodes that
   are descendants of the given navigator."
   [navigator]
-  (sort (concat (text-indices navigator) (mapcat text-descendant-indices (children navigator)))))
+  (sort (concat (text-indices navigator)
+                (mapcat text-descendant-indices (children navigator)))))
 
 (defn- text-descendants
   "Private. Returns a sequence of all text descending from the given navigator."
@@ -510,5 +484,6 @@
     (at ns-nav \"//ns1:title\" \"ns1\" \"http://example.com/ns\")"
   {:inline (fn [& args] `(first (search ~@args)))
    :inline-arities #{2 4}}
-  [& args] (first (apply search args)))
+  ([navigator xpath]            (first (search navigator xpath)))
+  ([navigator xpath prefix url] (first (search navigator xpath prefix url))))
 
