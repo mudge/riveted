@@ -18,7 +18,7 @@ following to your [Leiningen](https://github.com/technomancy/leiningen)
 dependencies:
 
 ```clojure
-[riveted "0.0.4"]
+[riveted "0.0.5"]
 ```
 
 ## Usage
@@ -29,7 +29,7 @@ dependencies:
 
 ;; Create an initial navigator for the XML document in foo.xml (the second
 ;; argument toggles namespace awareness).
-(def nav (vtd/navigator (slurp "foo.xml") false))
+(def nav (vtd/navigator (slurp "foo.xml")))
 
 (def bold-words
   (vtd/search nav "//b"))
@@ -69,6 +69,26 @@ dependencies:
 
 (vtd/next-sibling title :author)
 ;=> return a navigator for the next sibling "author" element
+
+(vtd/next-siblings title)
+;=> return a lazy sequence of navigators for all next sibling elements
+
+(vtd/next-siblings title :author)
+;=> return a lazy sequence of navigators for all next sibling "author"
+;   elements
+
+(vtd/previous-sibling title)
+;=> return a navigator for the previous sibling element
+
+(vtd/previous-sibling title :author)
+;=> return a navigator for the previous sibling "author" element
+
+(vtd/previous-siblings title)
+;=> return a lazy sequence of navigators for all previous sibling elements
+
+(vtd/previous-siblings title :author)
+;=> return a lazy sequence of navigators for all previous sibling "author"
+;   elements
 
 (vtd/first-child title)
 ;=> return a navigator for the first child element
@@ -110,11 +130,46 @@ dependencies:
 ;   namespace.
 ```
 
+## Mutable Interface
+
+riveted also provides a mutable interface to VTDNav (much like Clojure's
+[transient](http://clojure.org/transients)) data structures) for lower-memory
+usage (at the cost of immutability):
+
+```clojure
+; Create an initial navigator as per usual.
+(def nav (navigator "<root><a>Foo</a><b>Bar</b></root>"))
+
+; Mutate nav to point to the a element.
+(vtd/first-child! nav)
+
+(vtd/text nav)
+;=> "Foo"
+
+; Mutate nav to point to the b element.
+(vtd/next-sibling! nav)
+
+(vtd/text nav)
+;=> "Bar"
+
+; Mutate nav to point to the a element again.
+(vtd/previous-sibling! nav)
+
+; Mutate nav to point to the root element.
+(vtd/parent! nav)
+
+; Mutate nav to point to the root of the document (regardless of location).
+(vtd/root! nav)
+```
+
 ## Acknowledgements
 
 [Andrew Diamond's `clj-vtd-xml`](https://github.com/diamondap/clj-vtd-xml) and
 [Tim Williams' gist](https://gist.github.com/willtim/822769) are existing
 interfaces to VTD-XML from Clojure that were great sources of inspiration.
+
+[Dave Ray's `seesaw`](https://github.com/daveray/seesaw) sets the standard for
+helpful docstrings.
 
 ## License
 
