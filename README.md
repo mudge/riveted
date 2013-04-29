@@ -46,6 +46,11 @@ For more details, see [Usage](#usage) below.
 
 ;; Navigating by XPath, returning the first match.
 (vtd/text (vtd/at nav "/article/title"))
+
+;; Calling seq (or any function that uses seq such as first, second, nth,
+;; last, etc.) on the navigator yields a sequence of all parsed tokens as
+;; simple maps with a type and value entry.
+(first nav) ;=> {:type :start-tag, :value "a"}
 ```
 
 ## Usage
@@ -78,8 +83,9 @@ Let's say we have a file called `foo.xml` with the following content:
 </article>
 ```
 
-Let's load this into an initial navigator with the `navigator` function pass
-it a string of XML and store it as `nav`:
+Let's load this into an initial navigator with the `navigator` function,
+passing it a string of XML and then storing the result in the
+[var](http://clojure.org/vars) `nav`:
 
 ```clojure
 (def nav (vtd/navigator (slurp "foo.xml")))
@@ -90,9 +96,28 @@ support which is disabled by default. We'll look at this
 [later](#namespace-support) but, for now, we can process this document without
 using namespaces.
 
-Now that we have a navigator, we can navigate the document in several
-different ways, all based on a [cursor-based hierarchical
-view](http://vtd-xml.sourceforge.net/userGuide/3.html):
+Now that we have a navigator, we can navigate the document in one of two main
+ways: as a flat view of tokens or as a cursor-based hierarchical
+view (c.f. [VTD-XML's explanation of the two
+views](http://vtd-xml.sourceforge.net/userGuide/3.html)):
+
+### Flat view of tokens
+
+The simplest way of navigating a parsed document is to exploit the fact that a
+navigator implements [Clojure's Seqable
+interface](http://clojure.org/sequences) and can be traversed as a flat
+sequence much like a list or vector:
+
+```clojure
+(first nav)  ;=> {:type :start-tag, :value "article"}
+(second nav) ;=> {:type :start-tag, :value "title"}
+(nth nav 2)  ;=> {:type :character-data, :value "Foo bar"}
+(nth nav 4)  ;=> {:type :attribute-name, :value "id"}
+(seq nav)    ;=> the full sequence of tokens
+```
+
+While convenient, this way of navigating is particularly raw so it might be
+worth reviewing a cursor-based view instead.
 
 ### Traversing by direction
 

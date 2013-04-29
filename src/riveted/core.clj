@@ -4,6 +4,92 @@
   (:require [clojure.string :as s])
   (:import  [com.ximpleware VTDGen VTDNav AutoPilot TextIter]))
 
+(set! *warn-on-reflection* true)
+
+(defn- token-type-name
+  "Private. Return a keyword representing the token type of the given
+  VTDNav.
+
+  Possible values are:
+
+  * :start-tag
+  * :end-tag
+  * :attribute-name
+  * :attribute-value
+  * :namespace
+  * :character-data
+  * :comment
+  * :processing-instruction-name
+  * :processing-instruction-value
+  * :declaration-attribute-name
+  * :declaration-attribute-value
+  * :cdata
+  * :doctype"
+  [^VTDNav nav index]
+  (condp = (.getTokenType nav index)
+    VTDNav/TOKEN_DOCUMENT       :document
+    VTDNav/TOKEN_STARTING_TAG   :start-tag
+    VTDNav/TOKEN_ENDING_TAG     :end-tag
+    VTDNav/TOKEN_ATTR_NAME      :attribute-name
+    VTDNav/TOKEN_ATTR_NS        :namespace
+    VTDNav/TOKEN_ATTR_VAL       :attribute-value
+    VTDNav/TOKEN_CHARACTER_DATA :character-data
+    VTDNav/TOKEN_COMMENT        :comment
+    VTDNav/TOKEN_PI_NAME        :processing-instruction-name
+    VTDNav/TOKEN_PI_VAL         :processing-instruction-value
+    VTDNav/TOKEN_DEC_ATTR_NAME  :declaration-attribute-name
+    VTDNav/TOKEN_DEC_ATTR_VAL   :declaration-attribute-value
+    VTDNav/TOKEN_CDATA_VAL      :cdata
+    VTDNav/TOKEN_DTD_VAL        :doctype))
+
+(defn- index-seq
+  "Private. Return a lazy sequence of all tokens from the given VTDNav and
+  index onwards.
+
+  Tokens are represented as maps with a :type and :value entry."
+  [^VTDNav nav index]
+  (when (< index (.getTokenCount nav))
+    (cons {:type (token-type-name nav index)
+           :value (.toNormalizedString nav index)}
+          (lazy-seq (index-seq nav (inc index))))))
+
+;;; Wrapper type for the VTDNav class in order to implement Clojure's
+;;; Sequential, Seqable and Counted interfaces.
+
+(deftype Navigator [^VTDNav nav]
+  clojure.lang.Sequential
+  clojure.lang.Seqable
+  (seq [this]
+    (index-seq nav (.getCurrentIndex nav)))
+  clojure.lang.Counted
+  (count [this]
+    (.getTokenCount nav)))
+
+(defn- vtd-nav
+  "Private. Return the VTDNav for a given Navigator.
+
+  The use of vary-meta in the inline version of this function is in order to
+  type hint the navigator and return type.
+
+  See:
+    http://stackoverflow.com/questions/7754429/clojure-defmacro-loses-metadata"
+  {:inline (fn [navigator]
+             (vary-meta `(.nav ~(vary-meta navigator assoc :tag `Navigator))
+                        assoc :tag `VTDNav))}
+  ^VTDNav [^Navigator navigator] (.nav navigator))
+
+(defn- index
+  "Private. Return the current index of the given navigator."
+  {:inline (fn [navigator] `(.getCurrentIndex (vtd-nav ~navigator)))}
+  [navigator]
+  (.getCurrentIndex (vtd-nav navigator)))
+
+(defn- clone
+  "Private. Returns a new navigator cloned from the given one."
+  {:inline (fn [navigator] `(Navigator. (.cloneNav (vtd-nav ~navigator))))}
+  [navigator]
+  (Navigator. (.cloneNav (vtd-nav navigator))))
+
 (defn navigator
   "Return a VTD navigator for the given XML string with optional namespace
   support.  If called with only a string of XML, namespace support is disabled.
@@ -19,7 +105,7 @@
   ([^String xml namespace-aware]
    (let [vg (doto (VTDGen.) (.setDoc (.getBytes xml))
                             (.parse namespace-aware))]
-     (.getNav vg))))
+     (Navigator. (.getNav vg)))))
 
 (defn tag
   "Return the tag name for the element under the given VTD navigator as a
@@ -29,9 +115,18 @@
 
     (tag (root nav))
     ;=> \"root\""
-  [^VTDNav navigator]
-  (let [index (.getCurrentIndex navigator)]
-    (.toString navigator index)))
+  [navigator]
+  (.toString (vtd-nav navigator) (index navigator)))
+
+(defn- index->text
+  "Private. Returns the text value of a node identified by the given index in
+  the given navigator."
+  {:inline (fn [navigator index]
+             `(when-not (= ~index -1)
+                (.toNormalizedString (vtd-nav ~navigator) ~index)))}
+  [navigator index]
+  (when-not (= index -1)
+    (.toNormalizedString (vtd-nav navigator) index)))
 
 (defn attr
   "Return the value of the named attribute for the given navigator.
@@ -41,10 +136,9 @@
 
     (attr (root nav) :lang)
     ;=> \"en\""
-  [^VTDNav navigator attr-name]
-  (let [index (.getAttrVal navigator (name attr-name))]
-    (when-not (= index -1)
-      (.toNormalizedString navigator index))))
+  [navigator attr-name]
+  (let [index (.getAttrVal (vtd-nav navigator) (name attr-name))]
+    (index->text navigator index)))
 
 (defn attr?
   "Test whether the given attribute exists on the current element.
@@ -54,8 +148,8 @@
 
     (attr? (root nav) :lang)
     ;=> true"
-  [^VTDNav navigator attr-name]
-  (.hasAttr navigator (name attr-name)))
+  [navigator attr-name]
+  (.hasAttr (vtd-nav navigator) (name attr-name)))
 
 (defn fragment
   "Return a string XML fragment for all nodes under the given navigator.
@@ -64,9 +158,10 @@
 
     (fragment nav)
     ;=> \"<b>Some</b> XML as a raw <i>string</i>\""
-  [^VTDNav navigator]
-  (let [r (.getContentFragment navigator)]
-    (.toString navigator (bit-and r 16rFFFFFF) (bit-shift-right r 32))))
+  [navigator]
+  (let [nav (vtd-nav navigator)
+        r (.getContentFragment nav)]
+    (.toString nav (bit-and r 16rFFFFFF) (bit-shift-right r 32))))
 
 ;;; Transient interface for navigation.
 
@@ -98,13 +193,13 @@
 
   See:
     http://vtd-xml.sourceforge.net/javadoc/com/ximpleware/VTDNav.html"
-  ([^VTDNav navigator direction]
+  ([navigator direction]
     {:pre [(>= direction 0) (<= direction 5)]}
-    (when (.toElement navigator direction)
+    (when (.toElement (vtd-nav navigator) direction)
       navigator))
-  ([^VTDNav navigator direction element]
+  ([navigator direction element]
     {:pre [(>= direction 0) (<= direction 5)]}
-    (when (.toElement navigator direction (name element))
+    (when (.toElement (vtd-nav navigator) direction (name element))
       navigator)))
 
 (defn root!
@@ -207,10 +302,10 @@
     http://vtd-xml.sourceforge.net/javadoc/com/ximpleware/VTDNav.html
     (riveted.core/navigate!)"
   ([^VTDNav navigator direction]
-    (let [navigator' (.cloneNav navigator)]
+    (let [navigator' (clone navigator)]
       (navigate! navigator' direction)))
   ([^VTDNav navigator direction element]
-    (let [navigator' (.cloneNav navigator)]
+    (let [navigator' (clone navigator)]
       (navigate! navigator' direction element))))
 
 (defn root
@@ -379,18 +474,11 @@
     (when-not (= index -1)
       (cons index (lazy-seq (text-seq text-iter))))))
 
-(defn- index->text
-  "Private. Returns the text value of a node identified by the given index in
-  the given navigator."
-  [^VTDNav navigator index]
-  (when-not (= index -1)
-    (.toNormalizedString navigator index)))
-
 (defn- text-indices
   "Private. Creates a TextIter for the given navigator and returns a sequence of
   indices for all text nodes associated with it."
   [navigator]
-  (let [iter (doto (TextIter.) (.touch navigator))]
+  (let [iter (doto (TextIter.) (.touch (vtd-nav navigator)))]
     (text-seq iter)))
 
 (defn- text-descendant-indices
@@ -423,8 +511,8 @@
 
 (defn- token-type
   "Private. Returns the token type of the given navigator."
-  [^VTDNav navigator]
-  (.getTokenType navigator (.getCurrentIndex navigator)))
+  ([navigator]       (token-type navigator (index navigator)))
+  ([navigator index] (.getTokenType (vtd-nav navigator) index)))
 
 (defn element?
   "Tests whether the given navigator is currently positioned on an element."
@@ -439,10 +527,10 @@
 (defn- xpath-seq
   "Private. Returns a lazy sequence of navigators exhaustively evaluating XPath
   with the given navigator and AutoPilot."
-  [^VTDNav navigator ^AutoPilot autopilot]
+  [navigator ^AutoPilot autopilot]
   (let [index (.evalXPath autopilot)]
     (when-not (= index -1)
-      (cons (.cloneNav navigator)
+      (cons (clone navigator)
             (lazy-seq (xpath-seq navigator autopilot))))))
 
 (defn search
@@ -458,13 +546,14 @@
     ; Returns navigators for all matching elements providing ns-nav is
     ; namespace aware.
     (search ns-nav \"//ns1:title\" \"ns1\" \"http://example.com/ns\")"
-  ([^VTDNav navigator xpath]
-    (let [navigator' (.cloneNav navigator)
-          autopilot (doto (AutoPilot. navigator') (.selectXPath xpath))]
+  ([navigator xpath]
+    (let [navigator' (clone navigator)
+          autopilot (doto (AutoPilot. (vtd-nav navigator'))
+                          (.selectXPath xpath))]
       (xpath-seq navigator' autopilot)))
-  ([^VTDNav navigator xpath prefix url]
-    (let [navigator' (.cloneNav navigator)
-          autopilot (doto (AutoPilot. navigator')
+  ([navigator xpath prefix url]
+    (let [navigator' (clone navigator)
+          autopilot (doto (AutoPilot. (vtd-nav navigator'))
                           (.declareXPathNameSpace prefix url)
                           (.selectXPath xpath))]
       (xpath-seq navigator' autopilot))))
@@ -472,9 +561,9 @@
 (defn- select-seq
   "Private. Returns a lazy sequence of navigators exhaustively iterating through
   nodes with the given navigator and AutoPilot."
-  [^VTDNav navigator ^AutoPilot autopilot]
+  [navigator ^AutoPilot autopilot]
   (when (.iterate autopilot)
-    (cons (.cloneNav navigator)
+    (cons (clone navigator)
           (lazy-seq (select-seq navigator autopilot)))))
 
 (defn select
@@ -488,9 +577,9 @@
 
     ; Returns navigators for all b elements in nav.
     (select nav \"b\")"
-  [^VTDNav navigator element]
-  (let [navigator' (.cloneNav navigator)
-        autopilot (doto (AutoPilot. navigator')
+  [navigator element]
+  (let [navigator' (clone navigator)
+        autopilot (doto (AutoPilot. (vtd-nav navigator'))
                         (.selectElement (name element)))]
     (select-seq navigator' autopilot)))
 

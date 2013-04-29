@@ -4,7 +4,7 @@
 
 ;;; Test data.
 
-(def xml "<root><basic-title>Foo</basic-title><complex-title id=\"42\"><i>Foo</i> woo <b>moo</b></complex-title><i>Bar</i><foo/></root>")
+(def xml "<root><!--Hello--><basic-title>Foo</basic-title><complex-title id=\"42\"><i>Foo</i> woo <b>moo</b></complex-title><i>Bar</i><foo/></root>")
 (def ns-xml "<root xmlns:dc=\"http://purl.org/dc/elements/1.1/\"><dc:name>Bob</dc:name></root>")
 
 (def nav (navigator xml false))
@@ -12,7 +12,7 @@
 
 ;;; Custom checkers to simplify testing.
 
-(defn nav? [actual] (instance? VTDNav actual))
+(defn nav? [actual] (instance? riveted.core.Navigator actual))
 (defn tag? [tag-name] (fn [actual] (= tag-name (tag actual))))
 (defn tags? [& tag-names] (fn [actual] (= tag-names (map tag actual))))
 (def root? (tag? "root"))
@@ -197,4 +197,25 @@
 
 (fact "last-child! moves the given navigator to the last child."
   (last-child! nav!) => (tag? "age"))
+
+(fact "navigators are sequential."
+  nav => sequential?)
+
+(fact "navigators are counted."
+  nav => counted?
+  (count nav) => 16)
+
+(fact "navigators expose all internal tokens as a seq."
+  (first nav)  => {:type :start-tag, :value "root"}
+  (second nav) => {:type :comment, :value "Hello"}
+  (nth nav 2)  => {:type :start-tag, :value "basic-title"}
+  (nth nav 3)  => {:type :character-data, :value "Foo"}
+  (nth nav 5)  => {:type :attribute-name, :value "id"}
+  (nth nav 6)  => {:type :attribute-value, :value "42"})
+
+(fact "navigators not at the root, seq the remaining nodes."
+  (first (first-child nav :complex-title)) => {:type :start-tag,
+                                               :value "complex-title"}
+  (last (first-child nav :complex-title)) => {:type :start-tag,
+                                              :value "foo"})
 
