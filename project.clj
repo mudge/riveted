@@ -1,4 +1,4 @@
-(defproject riveted "0.0.6"
+(defproject riveted "0.0.7"
   :description "A Clojure library for the fast processing of XML with VTD-XML."
   :url "https://github.com/mudge/riveted"
   :license {:name "Eclipse Public License"

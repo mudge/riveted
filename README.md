@@ -15,7 +15,7 @@ following to your [Leiningen](https://github.com/technomancy/leiningen)
 dependencies:
 
 ```clojure
-[riveted "0.0.6"]
+[riveted "0.0.7"]
 ```
 
 ## Quick Start
