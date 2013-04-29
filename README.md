@@ -1,15 +1,12 @@
 # riveted [![Build Status](https://travis-ci.org/mudge/riveted.png?branch=master)](https://travis-ci.org/mudge/riveted)
 
-A Clojure interface for parsing XML with
-[VTD-XML](http://vtd-xml.sourceforge.net).
+A Clojure library for the
+[fast](http://vtd-xml.sourceforge.net/benchmark1.html) processing of XML with
+[VTD-XML](http://vtd-xml.sourceforge.net), a [Virtual Token
+Descriptor](http://vtd-xml.sf.net/VTD.html) XML parser.
 
 It provides a more Clojure-like abstraction over VTD while still exposing the
-ability to traverse a document's elements with `(first-child nav)`,
-`(parent nav)`, `(next-sibling nav)`, etc.
-
-Note that, unlike most XML libraries, you use selectors to return navigators
-(viz. a cursor to a point within the document) that can then be interrogated
-for their tag name, attributes and text values with other functions.
+power of its low-level interface.
 
 ## Installation
 
@@ -18,130 +15,287 @@ following to your [Leiningen](https://github.com/technomancy/leiningen)
 dependencies:
 
 ```clojure
-[riveted "0.0.5"]
+[riveted "0.0.6"]
 ```
 
-## Usage
+## Quick Start
+
+For more details, see [Usage](#usage) below.
 
 ```clojure
 (ns foo
   (:require [riveted.core :as vtd]))
 
-;; Create an initial navigator for the XML document in foo.xml
 (def nav (vtd/navigator (slurp "foo.xml")))
 
-(def bold-words
-  (vtd/search nav "//b"))
-;=> returns a lazy sequence of navigators for each matching element by XPath
+;; Navigating by direction and returning text content.
+(-> nav vtd/first-child vtd/next-sibling vtd/text) ;=> "Foo"
 
-(def title
-  (vtd/at nav "/article/front/article-meta/title-group/article-title"))
-;=> returns the first navigator that can be interrogated...
+;; Navigating by direction, restricted by element and returning attribute
+;; value.
+(-> nav (vtd/first-child :p) (attr :id)) ;=> "42"
 
-(def italic-words
-  (vtd/select nav :i))
-;=> returns a lazy sequence of navigators for each matching element by name
+;; Return the tag names of all children elements.
+(->> nav vtd/children (map vtd/tag)) ;=> ("p" "a" "b")
 
-(def all-elements
-  (vtd/select nav "*"))
-;=> returns a lazy sequence of all elements
+;; Navigating by element name, regardless of location.
+(-> nav (vtd/select :p) first vtd/text)
 
-(vtd/tag title)
-;=> "article-title"
+;; Navigating by XPath, returning all matches.
+(map vtd/text (vtd/search nav "//author"))
 
-(vtd/text title)
-;=> "Some title"
-;   (note that this will include *all* descendant text nodes
-;   regardless of mixed content so title could have been
-;   "<article-title><italic>Some</italic> title</article-title>")
-
-(vtd/attr title :id)
-;=> "123"
-
-(vtd/attr? title :id)
-;=> true when the element under the navigator has an attribute with the given
-;   name
-
-(vtd/fragment title)
-;=> "<b>Some</b> title"
-
-(vtd/parent title)
-;=> return a navigator for the parent element
-
-(vtd/root title)
-;=> return a navigator for the root element
-
-(vtd/next-sibling title)
-;=> return a navigator for the next sibling element
-
-(vtd/next-sibling title :author)
-;=> return a navigator for the next sibling "author" element
-
-(vtd/next-siblings title)
-;=> return a lazy sequence of navigators for all next sibling elements
-
-(vtd/next-siblings title :author)
-;=> return a lazy sequence of navigators for all next sibling "author"
-;   elements
-
-(vtd/previous-sibling title)
-;=> return a navigator for the previous sibling element
-
-(vtd/previous-sibling title :author)
-;=> return a navigator for the previous sibling "author" element
-
-(vtd/previous-siblings title)
-;=> return a lazy sequence of navigators for all previous sibling elements
-
-(vtd/previous-siblings title :author)
-;=> return a lazy sequence of navigators for all previous sibling "author"
-;   elements
-
-(vtd/first-child title)
-;=> return a navigator for the first child element
-
-(vtd/first-child title :b)
-;=> return a navigator for the first child "b" element
-
-(vtd/last-child title)
-;=> return a navigator for the last child element
-
-(vtd/last-child title :i)
-;=> return a navigator for the last child "i" element
-
-(vtd/siblings title)
-;=> return a sequence of all sibling elements
-
-(vtd/siblings title :span)
-;=> return a sequence of all sibling "span" elements
-
-(vtd/children title)
-;=> return a lazy sequence of all children elements (note this does not
-;   include text nodes)
-
-(vtd/children title :p)
-;=> return a lazy sequence of all children "p" elements
-
-(vtd/document? title)
-;=> true if the navigator is pointing to the whole document
-
-(vtd/element? title)
-;=> true if the navigator is pointing to an element
-
-;; Create an initial navigator for the XML document in namespaced.xml with
-;; namespace support enabled.
-(def ns-nav (vtd/navigator (slurp "namespaced.xml") true))
-
-(vtd/search ns-nav "//ns1:name" "ns1" "http://purl.org/dc/elements/1.1/")
-;=> return a lazy sequence of navigators for matching elements with the given
-;   namespace.
+;; Navigating by XPath, returning the first match.
+(vtd/text (vtd/at nav "/article/title"))
 ```
 
-## Mutable Interface
+## Usage
 
-riveted also provides a mutable interface to VTDNav (much like Clojure's
-[transient](http://clojure.org/transients) data structures) for lower-memory
-usage (at the cost of immutability):
+Once installed, you can include riveted into your desired namespace by
+requiring `riveted.core` like so:
+
+```clojure
+(ns foo
+  (:require [riveted.core :as vtd]))
+```
+
+The core data structure in riveted is the navigator: this represents both your
+XML document and your current location within it. It can be interrogated for
+the tag name, attributes and text value of any given element and also provides
+the ability to move around the document.
+
+Let's say we have a file called `foo.xml` with the following content:
+
+```xml
+<article>
+  <title>Foo bar</title>
+  <author id="1">
+    <name>Robert Paulson</name>
+    <name>Joe Bloggs</name>
+  </author>
+  <abstract>
+    A <i>great</i> article all about things.
+  </abstract>
+</article>
+```
+
+Let's load this into an initial navigator with the `navigator` function pass
+it a string of XML and store it as `nav`:
+
+```clojure
+(def nav (vtd/navigator (slurp "foo.xml")))
+```
+
+`navigator` also takes an optional second argument to enable XML namespace
+support which is disabled by default. We'll look at this
+[later](#namespace-support) but, for now, we can process this document without
+using namespaces.
+
+Now that we have a navigator, we can navigate the document in several
+different ways, all based on a [cursor-based hierarchical
+view](http://vtd-xml.sourceforge.net/userGuide/3.html):
+
+### Traversing by direction
+
+After parsing a document, the navigator's cursor is always at the root element
+of our XML: for `foo.xml`, this means the `article` element. If we want to
+retrieve the `title` and we know it's the first child of the article we can
+simply use riveted's `first-child` function:
+
+```clojure
+(vtd/first-child nav)
+```
+
+This returns a new navigator with its cursor set to the `title` element. We
+can check this by using the `text` and `tag` functions to return the text
+content and tag name of the current cursor respectively:
+
+```clojure
+(vtd/text (vtd/first-child nav)) ;=> "Foo bar"
+(vtd/tag (vtd/first-child nav))  ;=> "title"
+```
+
+If we then want to move to the `author` element, we can use the `next-sibling`
+function in a similar way:
+
+```clojure
+(vtd/next-sibling (vtd/first-child nav))
+```
+
+It may be more readable to use Clojure's [threading macro,
+`->`](http://clojuredocs.org/clojure_core/clojure.core/-%3E) when traversing
+in multiple directions:
+
+```clojure
+(-> nav vtd/first-child vtd/next-sibling)
+```
+
+If we want to test an element for its attributes, we can use `attr?` like so:
+
+```clojure
+(-> nav vtd/first-child vtd/next-sibling (vtd/attr? :id)) ;=> true
+```
+
+We can then fetch the value of the attribute with `attr`:
+
+```clojure
+(-> nav vtd/first-child vtd/next-sibling (vtd/attr :id)) ;=> "1"
+
+;; equivalent to:
+(vtd/attr (vtd/next-sibling (vtd/first-child nav)) :id)
+```
+
+As well as `first-child` and `next-sibling`, you can move in one direction
+with the following functions:
+
+```clojure
+(vtd/previous-sibling nav) ;=> move to the previous sibling element
+(vtd/last-child nav)       ;=> move to the last child element
+(vtd/parent nav)           ;=> move to the parent element
+(vtd/root nav)             ;=> move to the root element
+```
+
+We can also test navigators to distinguish elements from the entire document:
+
+```clojure
+(vtd/element? (vtd/first-child nav)) ;=> true
+(vtd/document? (vtd/parent nav))     ;=> true
+```
+
+As we are positioned on the `author` element, we might now want to collect the
+text values of the `name` elements within it. We could do this using the
+directional functions above but riveted provides a `children` function to do
+this for us:
+
+```clojure
+(->> nav vtd/first-child vtd/next-sibling vtd/children (map vtd/text))
+;=> ("Robert Paulson" "Joe Bloggs")
+
+;; or if you prefer not to use the threading macro:
+(map vtd/text (vtd/children (vtd/next-sibling (vtd/first-child nav))))
+```
+
+Note that `children`, along with `next-siblings` and `previous-siblings`,
+returns a lazy sequence of matching elements. They also take an optional
+second argument which allows you to specify an element name which will
+restrict results further.
+
+For example, if you wanted to return the `author` element directly from the
+original navigator, you could ask for the first `author` child like so:
+
+```clojure
+(-> nav (vtd/first-child :author))
+```
+
+Or ask the root for all child `author` elements:
+
+```clojure
+(-> nav (vtd/children :author)) ;=> a sequence of all author child elements
+```
+
+You can also get the full text content of a mixed-content node with `text`
+which would be perfect for our `abstract` element:
+
+```clojure
+(-> nav (vtd/first-child :abstract) vtd/text)
+;=> "A great article all about things."
+```
+
+If you want to retrieve the raw XML contents of a node, you can use `fragment`
+to do so:
+
+```clojure
+(-> nav (vtd/first-child :abstract) vtd/fragment)
+;=> "A <i>great</i> article all about things."
+```
+
+### Traversing by element name
+
+If we'd rather not navigate a document in terms of directions, riveted also
+provides a way to traverse XML by element names with `select`.
+
+To continue our example from above, if we wanted to pull the `title` text, we
+could ask the navigator for all `title` elements (regardless of location) like
+so:
+
+```clojure
+(vtd/select nav :title)
+```
+
+As this is a lazy sequence, we can ask for the text of the first item like so:
+
+```clojure
+(-> nav (vtd/select :title) first vtd/text) ;=> "Foo bar"
+```
+
+Similarly, we can ask for the text value of all `name` elements like so:
+
+```clojure
+(map vtd/text (vtd/select nav :name)) ;=> ("Robert Paulson" "Joe Bloggs")
+```
+
+Note that this will return `name` elements *anywhere* in the document but we
+could restrict its search by moving the navigator, perhaps using some of the
+direction functions from above:
+
+```clojure
+(map vtd/text (-> nav (vtd/first-child :author) (vtd/select :name)))
+;=> ("Robert Paulson" "Joe Bloggs")
+```
+
+Or perhaps with `select` itself:
+
+```clojure
+(map vtd/text (-> nav (vtd/select :author) first (vtd/select :name)))
+;=> ("Robert Paulson" "Joe Bloggs")
+```
+
+Finally, we can return a lazy sequence of *all* elements by simply using a
+wildcard match:
+
+```clojure
+(vtd/select nav "*")
+```
+
+### Traversing using XPath
+
+The last way to traverse a document is to use XPath 1.0 with the `search`
+function. Note that this is only used to navigate to elements (so it's not
+possible to directly return attribute values with an XPath expression).
+
+For example, to select all `name` elements:
+
+```clojure
+(vtd/search nav "//name")
+```
+
+If you are expecting only one match then you can use the `at` function to
+return only one result:
+
+```clojure
+(vtd/at nav "/article/title")
+```
+
+### Namespace support
+
+If you wish to use namespace-aware features, you will need to enable namespace
+support when creating the initial navigator like so:
+
+```clojure
+(def ns-nav (vtd/navigator (slurp "namespaced.xml") true))
+```
+
+You can then pass a prefix and URL when using `search` and `at` like so:
+
+```clojure
+(vtd/search ns-nav "//ns1:name" "ns1" "http://purl.org/dc/elements/1.1/")
+```
+
+### Mutable interface
+
+riveted also provides a mutable interface to
+[VTDNav](http://vtd-xml.sourceforge.net/javadoc/com/ximpleware/VTDNav.html)
+(much like Clojure's [transient](http://clojure.org/transients) data
+structures) for lower-memory usage (at the cost of immutability):
 
 ```clojure
 ;; Create an initial navigator as per usual.

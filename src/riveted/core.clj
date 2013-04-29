@@ -1,4 +1,4 @@
-(ns ^{:doc "A Clojure interface for parsing XML with VTD-XML."
+(ns ^{:doc "A Clojure library for the fast processing of XML with VTD-XML."
       :author "Paul Mucur"}
   riveted.core
   (:require [clojure.string :as s])
