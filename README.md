@@ -102,7 +102,7 @@ views](http://vtd-xml.sourceforge.net/userGuide/3.html)):
 
 * As a [cursor-based hierarchical view](#traversing-by-direction);
 * Using [element selectors](#traversing-by-element-name);
-* Using [XPath](#traversing-by-xpath)l
+* Using [XPath](#traversing-by-xpath);
 * As a [flat view of tokens](#flat-view-of-tokens).
 
 There is also a [mutable interface](#mutable-interface) for more constrained
