@@ -96,15 +96,22 @@ support which is disabled by default. We'll look at this
 [later](#namespace-support) but, for now, we can process this document without
 using namespaces.
 
-Now that we have a navigator, we can navigate the document in one of two main
-ways: as a flat view of tokens or as a cursor-based hierarchical
-view (c.f. [VTD-XML's explanation of the two
+Now that we have a navigator, we can navigate the document in several ways
+(c.f. [VTD-XML's explanation of its different
 views](http://vtd-xml.sourceforge.net/userGuide/3.html)):
+
+* As a [flat view of tokens](#flat-view-of-tokens);
+* As a [cursor-based hierarchical view](#traversing-by-direction);
+* Using [element selectors](#traversing-by-element-name);
+* Using [XPath](#traversing-by-xpath).
+
+There is also a [mutable interface](#mutable-interface) for more constrained
+memory usage.
 
 ### Flat view of tokens
 
-The simplest way of navigating a parsed document is to exploit the fact that a
-navigator implements [Clojure's Seqable
+The most basic way of navigating a parsed document is to exploit the fact that
+navigators implement [Clojure's `Seqable`
 interface](http://clojure.org/sequences) and can be traversed as a flat
 sequence much like a list or vector:
 
@@ -114,12 +121,28 @@ sequence much like a list or vector:
 (nth nav 2)  ;=> {:type :character-data, :value "Foo bar"}
 (nth nav 4)  ;=> {:type :attribute-name, :value "id"}
 (seq nav)    ;=> the full sequence of tokens
+
+;; Iterate over every pair of tokens in the document, returning the value of
+;; text after a starting article-title tag.
+(for [[tag-token text-token] (partition 2 1 nav)
+      :let [tag  (:value tag-token)
+            text (:value text-token)
+            text-type (:type text-token)]
+      :when (and (= "article-title" tag)
+                 (= :character-data text-type))]
+  text)
 ```
 
-While convenient, this way of navigating is particularly raw so it might be
-worth reviewing a cursor-based view instead.
+This gives you access to *all* tokens in the document including XML
+declarations, doctypes, comments, processing instructions, etc. However, it is
+a very low level of abstraction and if you only care about navigating
+elements, it might be better to use a cursor-based view instead.
 
 ### Traversing by direction
+
+As well as being `Seqable`, navigators can be used in conjunction with several
+functions provided by riveted to navigate a document in a hierarchical
+way.
 
 After parsing a document, the navigator's cursor is always at the root element
 of our XML: for `foo.xml`, this means the `article` element. If we want to
@@ -182,8 +205,8 @@ with the following functions:
 We can also test navigators to distinguish elements from the entire document:
 
 ```clojure
-(vtd/element? (vtd/first-child nav)) ;=> true
-(vtd/document? (vtd/parent nav))     ;=> true
+(-> nav vtd/first-child vtd/element?) ;=> true
+(-> nav vtd/parent vtd/document?)     ;=> true
 ```
 
 As we are positioned on the `author` element, we might now want to collect the
@@ -281,7 +304,7 @@ wildcard match:
 (vtd/select nav "*")
 ```
 
-### Traversing using XPath
+### Traversing by XPath
 
 The last way to traverse a document is to use XPath 1.0 with the `search`
 function. Note that this is only used to navigate to elements (so it's not
@@ -348,14 +371,35 @@ structures) for lower-memory usage (at the cost of immutability):
 (vtd/root! nav)
 ```
 
+In order to mitigate the problems with mutable state, it might be best to use
+the above functions much like you would `transient`; viz. within the confines
+of a function like so:
+
+```clojure
+(defn title [nav]
+  (-> (root nav)                    ; Create a new navigator to the root for
+      (first-child! :front)         ; mutation.
+      (first-child! :article-meta)
+      (first-child! :title-group)
+      (first-child! :article-title)
+      text))
+```
+
+In this way, only one extra navigator is created.
+
 ## Acknowledgements
 
 [Andrew Diamond's `clj-vtd-xml`](https://github.com/diamondap/clj-vtd-xml) and
 [Tim Williams' gist](https://gist.github.com/willtim/822769) are existing
 interfaces to VTD-XML from Clojure that were great sources of inspiration.
 
-[Dave Ray's `seesaw`](https://github.com/daveray/seesaw) sets the standard for
+[Dave Ray's `seesaw`](https://github.com/daveray/seesaw) set the standard for
 helpful docstrings.
+
+Clojure's
+[`core.clj`](https://github.com/clojure/clojure/blob/master/src/clj/clojure/core.clj)
+provided fascinating reading, particularly regarding the use of `:inline`
+metadata.
 
 ## License
 
