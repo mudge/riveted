@@ -100,49 +100,15 @@ Now that we have a navigator, we can navigate the document in several ways
 (c.f. [VTD-XML's explanation of its different
 views](http://vtd-xml.sourceforge.net/userGuide/3.html)):
 
-* As a [flat view of tokens](#flat-view-of-tokens);
 * As a [cursor-based hierarchical view](#traversing-by-direction);
 * Using [element selectors](#traversing-by-element-name);
-* Using [XPath](#traversing-by-xpath).
+* Using [XPath](#traversing-by-xpath)l
+* As a [flat view of tokens](#flat-view-of-tokens).
 
 There is also a [mutable interface](#mutable-interface) for more constrained
 memory usage.
 
-### Flat view of tokens
-
-The most basic way of navigating a parsed document is to exploit the fact that
-navigators implement [Clojure's `Seqable`
-interface](http://clojure.org/sequences) and can be traversed as a flat
-sequence much like a list or vector:
-
-```clojure
-(first nav)  ;=> {:type :start-tag, :value "article"}
-(second nav) ;=> {:type :start-tag, :value "title"}
-(nth nav 2)  ;=> {:type :character-data, :value "Foo bar"}
-(nth nav 4)  ;=> {:type :attribute-name, :value "id"}
-(seq nav)    ;=> the full sequence of tokens
-
-;; Iterate over every pair of tokens in the document, returning the value of
-;; text after a starting article-title tag.
-(for [[tag-token text-token] (partition 2 1 nav)
-      :let [tag  (:value tag-token)
-            text (:value text-token)
-            text-type (:type text-token)]
-      :when (and (= "article-title" tag)
-                 (= :character-data text-type))]
-  text)
-```
-
-This gives you access to *all* tokens in the document including XML
-declarations, doctypes, comments, processing instructions, etc. However, it is
-a very low level of abstraction and if you only care about navigating
-elements, it might be better to use a cursor-based view instead.
-
 ### Traversing by direction
-
-As well as being `Seqable`, navigators can be used in conjunction with several
-functions provided by riveted to navigate a document in a hierarchical
-way.
 
 After parsing a document, the navigator's cursor is always at the root element
 of our XML: for `foo.xml`, this means the `article` element. If we want to
@@ -337,6 +303,36 @@ You can then pass a prefix and URL when using `search` and `at` like so:
 ```clojure
 (vtd/search ns-nav "//ns1:name" "ns1" "http://purl.org/dc/elements/1.1/")
 ```
+
+### Flat view of tokens
+
+The most basic way of navigating a parsed document is to exploit the fact that
+navigators implement [Clojure's `Seqable`
+interface](http://clojure.org/sequences) and can be traversed as a flat
+sequence much like a list or vector:
+
+```clojure
+(first nav)  ;=> {:type :start-tag, :value "article"}
+(second nav) ;=> {:type :start-tag, :value "title"}
+(nth nav 2)  ;=> {:type :character-data, :value "Foo bar"}
+(nth nav 4)  ;=> {:type :attribute-name, :value "id"}
+(seq nav)    ;=> the full sequence of tokens
+
+;; Iterate over every pair of tokens in the document, returning the value of
+;; text after a starting article-title tag.
+(for [[tag-token text-token] (partition 2 1 nav)
+      :let [tag  (:value tag-token)
+            text (:value text-token)
+            text-type (:type text-token)]
+      :when (and (= "article-title" tag)
+                 (= :character-data text-type))]
+  text)
+```
+
+This gives you access to *all* tokens in the document including XML
+declarations, doctypes, comments, processing instructions, etc. However, it is
+a very low level of abstraction and if you only care about navigating
+elements, it might be better to use a cursor-based view instead.
 
 ### Mutable interface
 
