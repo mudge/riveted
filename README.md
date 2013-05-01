@@ -306,8 +306,8 @@ You can then pass a prefix and URL when using `search` and `at` like so:
 
 ### Flat view of tokens
 
-The most basic way of navigating a parsed document is to exploit the fact that
-navigators implement [Clojure's `Seqable`
+If you need lower level access to the parsed document, you can exploit the
+fact that navigators implement [Clojure's `Seqable`
 interface](http://clojure.org/sequences) and can be traversed as a flat
 sequence much like a list or vector:
 
@@ -318,15 +318,8 @@ sequence much like a list or vector:
 (nth nav 4)  ;=> {:type :attribute-name, :value "id"}
 (seq nav)    ;=> the full sequence of tokens
 
-;; Iterate over every pair of tokens in the document, returning the value of
-;; text after a starting article-title tag.
-(for [[tag-token text-token] (partition 2 1 nav)
-      :let [tag  (:value tag-token)
-            text (:value text-token)
-            text-type (:type text-token)]
-      :when (and (= "article-title" tag)
-                 (= :character-data text-type))]
-  text)
+;; Return all comments from a document.
+(filter (comp #{:comment} :type) nav)
 ```
 
 This gives you access to *all* tokens in the document including XML
