@@ -18,6 +18,11 @@ dependencies:
 [riveted "0.0.7"]
 ```
 
+## API Documentation
+
+The latest [riveted API documentation](http://mudge.name/riveted/) is
+automatically generated with [Codox](https://github.com/weavejester/codox).
+
 ## Quick Start
 
 For more details, see [Usage](#usage) below.
