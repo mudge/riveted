@@ -48,10 +48,11 @@
 
   Tokens are represented as maps with a :type and :value entry."
   [^VTDNav nav index]
-  (when (< index (.getTokenCount nav))
-    (cons {:type (token-type-name nav index)
-           :value (.toNormalizedString nav index)}
-          (lazy-seq (index-seq nav (inc index))))))
+  (lazy-seq
+    (when (< index (.getTokenCount nav))
+      (cons {:type (token-type-name nav index)
+            :value (.toNormalizedString nav index)}
+            (index-seq nav (inc index))))))
 
 ;;; Wrapper type for the VTDNav class in order to implement Clojure's
 ;;; Sequential, Seqable and Counted interfaces.
@@ -66,7 +67,7 @@
     (.getTokenCount nav)))
 
 (defn- vtd-nav
-  "Private. Return the VTDNav for a given Navigator.
+  "Private. Return the VTDNav for a given Navigator or nil if not applicable.
 
   The use of vary-meta in the inline version of this function is in order to
   type hint the navigator and return type.
@@ -74,21 +75,31 @@
   See:
     http://stackoverflow.com/questions/7754429/clojure-defmacro-loses-metadata"
   {:inline (fn [navigator]
-             (vary-meta `(.nav ~(vary-meta navigator assoc :tag `Navigator))
-                        assoc :tag `VTDNav))}
-  ^VTDNav [^Navigator navigator] (.nav navigator))
+             `(when (instance? Navigator ~navigator)
+                ~(vary-meta `(.nav ~(vary-meta navigator assoc :tag `Navigator))
+                        assoc :tag `VTDNav)))}
+  ^VTDNav
+  [^Navigator navigator]
+  (when (instance? Navigator navigator)
+    (.nav navigator)))
 
 (defn- index
   "Private. Return the current index of the given navigator."
-  {:inline (fn [navigator] `(.getCurrentIndex (vtd-nav ~navigator)))}
+  {:inline (fn [navigator]
+             `(when-let [nav# (vtd-nav ~navigator)]
+                (.getCurrentIndex nav#)))}
   [navigator]
-  (.getCurrentIndex (vtd-nav navigator)))
+  (when-let [nav (vtd-nav navigator)]
+    (.getCurrentIndex nav)))
 
 (defn- clone
   "Private. Returns a new navigator cloned from the given one."
-  {:inline (fn [navigator] `(Navigator. (.cloneNav (vtd-nav ~navigator))))}
+  {:inline (fn [navigator]
+             `(when-let [nav# (vtd-nav ~navigator)]
+                (Navigator. (.cloneNav nav#))))}
   [navigator]
-  (Navigator. (.cloneNav (vtd-nav navigator))))
+  (when-let [nav (vtd-nav navigator)]
+    (-> nav .cloneNav Navigator.)))
 
 (defn navigator
   "Return a VTD navigator for the given XML string with optional namespace
@@ -116,17 +127,20 @@
     (tag (root nav))
     ;=> \"root\""
   [navigator]
-  (.toString (vtd-nav navigator) (index navigator)))
+  (when-let [nav (vtd-nav navigator)]
+    (.toString nav (index navigator))))
 
 (defn- index->text
   "Private. Returns the text value of a node identified by the given index in
   the given navigator."
   {:inline (fn [navigator index]
-             `(when-not (= ~index -1)
-                (.toNormalizedString (vtd-nav ~navigator) ~index)))}
+             `(when-let [nav# (vtd-nav ~navigator)]
+                (when-not (= ~index -1)
+                  (.toNormalizedString nav# ~index))))}
   [navigator index]
-  (when-not (= index -1)
-    (.toNormalizedString (vtd-nav navigator) index)))
+  (when-let [nav (vtd-nav navigator)]
+    (when-not (= index -1)
+      (.toNormalizedString nav index))))
 
 (defn attr
   "Return the value of the named attribute for the given navigator.
@@ -137,8 +151,9 @@
     (attr (root nav) :lang)
     ;=> \"en\""
   [navigator attr-name]
-  (let [index (.getAttrVal (vtd-nav navigator) (name attr-name))]
-    (index->text navigator index)))
+  (when-let [nav (vtd-nav navigator)]
+    (let [index (.getAttrVal nav (name attr-name))]
+      (index->text navigator index))))
 
 (defn attr?
   "Test whether the given attribute exists on the current element.
@@ -149,7 +164,8 @@
     (attr? (root nav) :lang)
     ;=> true"
   [navigator attr-name]
-  (.hasAttr (vtd-nav navigator) (name attr-name)))
+  (when-let [nav (vtd-nav navigator)]
+    (.hasAttr nav (name attr-name))))
 
 (defn fragment
   "Return a string XML fragment for all nodes under the given navigator.
@@ -159,9 +175,9 @@
     (fragment nav)
     ;=> \"<b>Some</b> XML as a raw <i>string</i>\""
   [navigator]
-  (let [nav (vtd-nav navigator)
-        r (.getContentFragment nav)]
-    (.toString nav (bit-and r 16rFFFFFF) (bit-shift-right r 32))))
+  (when-let [nav (vtd-nav navigator)]
+    (let [r (.getContentFragment nav)]
+      (.toString nav (bit-and r 16rFFFFFF) (bit-shift-right r 32)))))
 
 ;;; Transient interface for navigation.
 
@@ -195,12 +211,14 @@
     http://vtd-xml.sourceforge.net/javadoc/com/ximpleware/VTDNav.html"
   ([navigator direction]
     {:pre [(>= direction 0) (<= direction 5)]}
-    (when (.toElement (vtd-nav navigator) direction)
-      navigator))
+    (when-let [nav (vtd-nav navigator)]
+      (when (.toElement nav direction)
+        navigator)))
   ([navigator direction element]
     {:pre [(>= direction 0) (<= direction 5)]}
-    (when (.toElement (vtd-nav navigator) direction (name element))
-      navigator)))
+    (when-let [nav (vtd-nav navigator)]
+      (when (.toElement nav direction (name element))
+        navigator))))
 
 (defn root!
   "Move the given navigator to the document root, mutating it in place."
@@ -302,10 +320,10 @@
     http://vtd-xml.sourceforge.net/javadoc/com/ximpleware/VTDNav.html
     (riveted.core/navigate!)"
   ([^VTDNav navigator direction]
-    (let [navigator' (clone navigator)]
+    (when-let [navigator' (clone navigator)]
       (navigate! navigator' direction)))
   ([^VTDNav navigator direction element]
-    (let [navigator' (clone navigator)]
+    (when-let [navigator' (clone navigator)]
       (navigate! navigator' direction element))))
 
 (defn root
@@ -387,11 +405,13 @@
     ; Return navigators for every next sibling p element to nav.
     (next-siblings nav :p)"
   ([navigator]
-    (when-let [sibling (next-sibling navigator)]
-      (cons sibling (lazy-seq (next-siblings sibling)))))
+    (lazy-seq
+      (when-let [sibling (next-sibling navigator)]
+        (cons sibling (next-siblings sibling)))))
   ([navigator element]
-    (when-let [sibling (next-sibling navigator element)]
-      (cons sibling (lazy-seq (next-siblings sibling element))))))
+    (lazy-seq
+      (when-let [sibling (next-sibling navigator element)]
+        (cons sibling (next-siblings sibling element))))))
 
 (defn previous-siblings
   "Return a lazy sequence of navigators representing all siblings previous to
@@ -408,11 +428,13 @@
     ; Return navigators for every previous sibling p element to nav.
     (previous-siblings nav :p)"
   ([navigator]
-    (when-let [sibling (previous-sibling navigator)]
-      (cons sibling (lazy-seq (previous-siblings sibling)))))
+    (lazy-seq
+      (when-let [sibling (previous-sibling navigator)]
+        (cons sibling (previous-siblings sibling)))))
   ([navigator element]
-    (when-let [sibling (previous-sibling navigator element)]
-      (cons sibling (lazy-seq (previous-siblings sibling element))))))
+    (lazy-seq
+      (when-let [sibling (previous-sibling navigator element)]
+        (cons sibling (previous-siblings sibling element))))))
 
 (defn siblings
   "Return navigators for all siblings to the given navigator (optionally
@@ -457,29 +479,34 @@
     ; Return navigators for all child p elements of nav.
     (children nav :p)"
   {:inline (fn [navigator & args]
-             `(when-let [child# (first-child ~navigator ~@args)]
-                (cons child# (lazy-seq (next-siblings child# ~@args)))))
+             `(lazy-seq
+                (when-let [child# (first-child ~navigator ~@args)]
+                  (cons child# (next-siblings child# ~@args)))))
    :inline-arities #{1 2}}
   ([navigator]
-    (when-let [child (first-child navigator)]
-      (cons child (lazy-seq (next-siblings child)))))
+    (lazy-seq
+      (when-let [child (first-child navigator)]
+        (cons child (next-siblings child)))))
   ([navigator element]
-    (when-let [child (first-child navigator element)]
-      (cons child (lazy-seq (next-siblings child element))))))
+    (lazy-seq
+      (when-let [child (first-child navigator element)]
+        (cons child (next-siblings child element))))))
 
 (defn- text-seq
   "Private. Returns a lazy sequence of all text nodes for a given TextIter."
   [^TextIter text-iter]
-  (let [index (.getNext text-iter)]
-    (when-not (= index -1)
-      (cons index (lazy-seq (text-seq text-iter))))))
+  (lazy-seq
+    (let [index (.getNext text-iter)]
+      (when-not (= index -1)
+        (cons index (text-seq text-iter))))))
 
 (defn- text-indices
   "Private. Creates a TextIter for the given navigator and returns a sequence of
   indices for all text nodes associated with it."
   [navigator]
-  (let [iter (doto (TextIter.) (.touch (vtd-nav navigator)))]
-    (text-seq iter)))
+  (when-let [nav (vtd-nav navigator)]
+    (let [iter (doto (TextIter.) (.touch nav))]
+      (text-seq iter))))
 
 (defn- text-descendant-indices
   "Private. Returns an ordered sequence of the indices of all text nodes that
@@ -512,7 +539,9 @@
 (defn- token-type
   "Private. Returns the token type of the given navigator."
   ([navigator]       (token-type navigator (index navigator)))
-  ([navigator index] (.getTokenType (vtd-nav navigator) index)))
+  ([navigator index]
+    (when-let [nav (vtd-nav navigator)]
+      (.getTokenType nav index))))
 
 (defn element?
   "Tests whether the given navigator is currently positioned on an element."
@@ -528,10 +557,11 @@
   "Private. Returns a lazy sequence of navigators exhaustively evaluating XPath
   with the given navigator and AutoPilot."
   [navigator ^AutoPilot autopilot]
-  (let [index (.evalXPath autopilot)]
-    (when-not (= index -1)
-      (cons (clone navigator)
-            (lazy-seq (xpath-seq navigator autopilot))))))
+  (lazy-seq
+    (let [index (.evalXPath autopilot)]
+      (when-not (= index -1)
+        (cons (clone navigator)
+              (xpath-seq navigator autopilot))))))
 
 (defn search
   "Search for the given XPath in the navigator, returning a lazy sequence of all
@@ -547,24 +577,25 @@
     ; namespace aware.
     (search ns-nav \"//ns1:title\" \"ns1\" \"http://example.com/ns\")"
   ([navigator xpath]
-    (let [navigator' (clone navigator)
-          autopilot (doto (AutoPilot. (vtd-nav navigator'))
-                          (.selectXPath xpath))]
-      (xpath-seq navigator' autopilot)))
+    (when-let [navigator' (clone navigator)]
+      (let [autopilot (doto (AutoPilot. (vtd-nav navigator'))
+                            (.selectXPath xpath))]
+        (xpath-seq navigator' autopilot))))
   ([navigator xpath prefix url]
-    (let [navigator' (clone navigator)
-          autopilot (doto (AutoPilot. (vtd-nav navigator'))
-                          (.declareXPathNameSpace prefix url)
-                          (.selectXPath xpath))]
-      (xpath-seq navigator' autopilot))))
+    (when-let [navigator' (clone navigator)]
+      (let [autopilot (doto (AutoPilot. (vtd-nav navigator'))
+                            (.declareXPathNameSpace prefix url)
+                            (.selectXPath xpath))]
+        (xpath-seq navigator' autopilot)))))
 
 (defn- select-seq
   "Private. Returns a lazy sequence of navigators exhaustively iterating through
   nodes with the given navigator and AutoPilot."
   [navigator ^AutoPilot autopilot]
-  (when (.iterate autopilot)
-    (cons (clone navigator)
-          (lazy-seq (select-seq navigator autopilot)))))
+  (lazy-seq
+    (when (.iterate autopilot)
+      (cons (clone navigator)
+            (select-seq navigator autopilot)))))
 
 (defn select
   "Return a lazy sequence of navigators matching the given element name, * can
@@ -578,10 +609,10 @@
     ; Returns navigators for all b elements in nav.
     (select nav \"b\")"
   [navigator element]
-  (let [navigator' (clone navigator)
-        autopilot (doto (AutoPilot. (vtd-nav navigator'))
-                        (.selectElement (name element)))]
-    (select-seq navigator' autopilot)))
+  (when-let [navigator' (clone navigator)]
+    (let [autopilot (doto (AutoPilot. (vtd-nav navigator'))
+                          (.selectElement (name element)))]
+      (select-seq navigator' autopilot))))
 
 (defn at
   "Search for the given XPath in the navigator, returning the first matching
