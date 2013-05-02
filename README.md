@@ -15,7 +15,7 @@ following to your [Leiningen](https://github.com/technomancy/leiningen)
 dependencies:
 
 ```clojure
-[riveted "0.0.7"]
+[riveted "0.0.8"]
 ```
 
 ## API Documentation
