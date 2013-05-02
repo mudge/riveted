@@ -12,5 +12,6 @@
              :1.4 {:dependencies [[org.clojure/clojure "1.4.0"]]}
              :1.5.0 {:dependencies [[org.clojure/clojure "1.5.0"]]}
              :1.5.1 {:dependencies [[org.clojure/clojure "1.5.1"]]}}
+  :aliases { "all" ["with-profile" "dev,1.3:dev,1.4:dev,1.5.0:dev,1.5.1"]}
   :codox {:src-dir-uri "https://github.com/mudge/riveted/blob/master"
           :src-linenum-anchor-prefix "L"})
