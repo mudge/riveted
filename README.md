@@ -18,6 +18,10 @@ dependencies:
 [riveted "0.0.8"]
 ```
 
+## Compatibility
+
+riveted is tested against Clojure 1.3.0, 1.4.0, 1.5.0 and 1.5.1.
+
 ## API Documentation
 
 The latest [riveted API documentation](http://mudge.name/riveted/) is
@@ -371,12 +375,12 @@ of a function like so:
 
 ```clojure
 (defn title [nav]
-  (-> (root nav)                    ; Create a new navigator to the root for
-      (first-child! :front)         ; mutation.
-      (first-child! :article-meta)
-      (first-child! :title-group)
-      (first-child! :article-title)
-      text))
+  (-> (vtd/root nav)                    ; Create a new navigator to the root
+      (vtd/first-child! :front)         ; for mutation.
+      (vtd/first-child! :article-meta)
+      (vtd/first-child! :title-group)
+      (vtd/first-child! :article-title)
+      vtd/text))
 ```
 
 In this way, only one extra navigator is created.
