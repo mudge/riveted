@@ -319,10 +319,10 @@
   See:
     http://vtd-xml.sourceforge.net/javadoc/com/ximpleware/VTDNav.html
     (riveted.core/navigate!)"
-  ([^VTDNav navigator direction]
+  ([navigator direction]
     (when-let [navigator' (clone navigator)]
       (navigate! navigator' direction)))
-  ([^VTDNav navigator direction element]
+  ([navigator direction element]
     (when-let [navigator' (clone navigator)]
       (navigate! navigator' direction element))))
 
