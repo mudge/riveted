@@ -4,7 +4,7 @@
 
 ;;; Test data.
 
-(def xml "<root><!--Hello--><basic-title>Foo</basic-title><complex-title id=\"42\"><i>Foo</i> woo <b>moo</b></complex-title><i>Bar</i><foo/></root>")
+(def xml "<root><!--Hello--><basic-title>Foo</basic-title><complex-title id=\"42\" empty=\"\"><i>Foo</i> woo <b>moo</b></complex-title><i>Bar</i><foo/></root>")
 (def ns-xml "<root xmlns:dc=\"http://purl.org/dc/elements/1.1/\"><dc:name>Bob</dc:name></root>")
 
 (def nav (navigator xml false))
@@ -213,7 +213,7 @@
 
 (fact "navigators are counted."
   nav => counted?
-  (count nav) => 16)
+  (count nav) => 18)
 
 (fact "navigators expose all internal tokens as a seq."
   (first nav)  => {:type :start-tag, :value "root"}
@@ -231,3 +231,17 @@
 
 (fact "navigators can safely be threaded even with nils."
   (-> nav (first-child :missing) (last-child :missing) text) => nil?)
+
+(fact "attribute? returns true if the navigator is set to an attribute."
+  (at nav "/root/complex-title/@id") => attribute?
+  (at nav "/root/complex-title") =not=> attribute?
+  (root nav) =not=> attribute?)
+
+(fact "attribute values can be retrieved with text."
+  (text (at nav "/root/complex-title/@id")) => "42"
+  (text (at nav "/root/complex-title/@empty")) => "")
+
+(fact "attribute names can be retrieved with tag."
+  (tag (at nav "/root/complex-title/@id")) => "id"
+  (tag (at nav "/root/complex-title/@empty")) => "empty")
+

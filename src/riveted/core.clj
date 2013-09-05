@@ -120,12 +120,16 @@
 
 (defn tag
   "Return the tag name for the element under the given VTD navigator as a
-  string.
+  string. If positioned on an attribute (e.g. with an XPath like /@foo), return
+  the name of the attribute.
 
   Examples:
 
     (tag (root nav))
-    ;=> \"root\""
+    ;=> \"root\"
+
+    (tag (at nav \"/channel/@id\"))
+    ;=> \"id\""
   [navigator]
   (when-let [nav (vtd-nav navigator)]
     (.toString nav (index navigator))))
@@ -520,22 +524,6 @@
   [navigator]
   (map (partial index->text navigator) (text-descendant-indices navigator)))
 
-(defn text
-  "Return all descendant text content below the given navigator as one string.
-  This means both the value of a simple text node and also the resulting text
-  value of a mixed content node such as <p><b>Foo</b> bar</p>.
-
-  Examples:
-
-    ; Returns \"Foo\" given nav points to <p>Foo</p>
-    (text nav)
-
-    ; Returns \"Foo bar\" given nav points to <p><b>Foo</b> bar</p>
-    (text nav)"
-  [navigator]
-  (when-let [texts (seq (text-descendants navigator))]
-    (s/join " " texts)))
-
 (defn- token-type
   "Private. Returns the token type of the given navigator."
   ([navigator]       (token-type navigator (index navigator)))
@@ -552,6 +540,33 @@
   "Tests whether the given navigator is currently positioned the document."
   [navigator]
   (= VTDNav/TOKEN_DOCUMENT (token-type navigator)))
+
+(defn attribute?
+  "Tests whether the given navigator is currently positioned on an attribute."
+  [navigator]
+  (= VTDNav/TOKEN_ATTR_NAME (token-type navigator)))
+
+(defn text
+  "Return all descendant text content below the given navigator as one string.
+  This means both the value of a simple text node and also the resulting text
+  value of a mixed content node such as <p><b>Foo</b> bar</p>. If the navigator
+  is currently positioned on an attribute (e.g. by using an XPath like /@foo),
+  return the value of the attribute.
+
+  Examples:
+
+    ; Returns \"Foo\" given nav points to <p>Foo</p>
+    (text nav)
+
+    ; Returns \"Foo bar\" given nav points to <p><b>Foo</b> bar</p>
+    (text nav)
+
+    ; Returns \"123\" given nav points to @src of <img src=\"123\"/>
+    (text nav)"
+  [navigator]
+  (if (attribute? navigator) (:value (second navigator))
+    (when-let [texts (seq (text-descendants navigator))]
+      (s/join " " texts))))
 
 (defn- xpath-seq
   "Private. Returns a lazy sequence of navigators exhaustively evaluating XPath

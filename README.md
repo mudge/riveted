@@ -15,7 +15,7 @@ following to your [Leiningen](https://github.com/technomancy/leiningen)
 dependencies:
 
 ```clojure
-[riveted "0.0.8"]
+[riveted "0.0.9"]
 ```
 
 ## Compatibility
@@ -180,8 +180,9 @@ with the following functions:
 We can also test navigators to distinguish elements from the entire document:
 
 ```clojure
-(-> nav vtd/first-child vtd/element?) ;=> true
-(-> nav vtd/parent vtd/document?)     ;=> true
+(-> nav vtd/first-child vtd/element?)   ;=> true
+(-> nav vtd/parent vtd/document?)       ;=> true
+(-> nav vtd/first-child vtd/attribute?) ;=> false
 ```
 
 As we are positioned on the `author` element, we might now want to collect the
@@ -296,6 +297,13 @@ return only one result:
 
 ```clojure
 (vtd/at nav "/article/title")
+```
+
+If accessing attributes via XPath, you can use `text` to return the value of
+the attribute:
+
+```clojure
+(text (vtd/at nav "/article/@id"))
 ```
 
 ### Namespace support
