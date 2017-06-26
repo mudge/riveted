@@ -114,7 +114,7 @@
     (navigator \"<root xmlns:ns=\\\"http://example.com/ns\\\"><foo>Bar</foo></root>\" true)"
   ([^String xml] (navigator xml false))
   ([^String xml namespace-aware]
-   (let [vg (doto (VTDGen.) (.setDoc (.getBytes xml))
+   (let [vg (doto (VTDGen.) (.setDoc (.getBytes xml "UTF-8"))
                             (.parse namespace-aware))]
      (Navigator. (.getNav vg)))))
 
