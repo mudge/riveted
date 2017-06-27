@@ -102,8 +102,9 @@
     (-> nav .cloneNav Navigator.)))
 
 (defn navigator
-  "Return a VTD navigator for the given XML string with optional namespace
-  support.  If called with only a string of XML, namespace support is disabled.
+  "Return a VTD navigator for the given UTF-8 XML string with optional
+  namespace support. If called with only a string of XML, namespace support is
+  disabled.
 
   Examples:
 

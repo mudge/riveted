@@ -15,12 +15,12 @@ following to your [Leiningen](https://github.com/technomancy/leiningen)
 dependencies:
 
 ```clojure
-[riveted "0.0.9"]
+[riveted "0.1.0"]
 ```
 
 ## Compatibility
 
-riveted is tested against Clojure 1.3.0, 1.4.0, 1.5.0 and 1.5.1.
+riveted is tested against Clojure 1.3, 1.4, 1.5.1, 1.6, 1.7 and 1.8.
 
 ## API Documentation
 
@@ -93,7 +93,7 @@ Let's say we have a file called `foo.xml` with the following content:
 ```
 
 Let's load this into an initial navigator with the `navigator` function,
-passing it a string of XML and then storing the result in the
+passing it a UTF-8 encoded string of XML and then storing the result in the
 [var](http://clojure.org/vars) `nav`:
 
 ```clojure
@@ -407,8 +407,11 @@ Clojure's
 provided fascinating reading, particularly regarding the use of `:inline`
 metadata.
 
+Thanks to [Heikki Hämäläinen](https://github.com/hjhamala) for contributing a
+character encoding fix for Windows users.
+
 ## License
 
-Copyright © 2013 Paul Mucur.
+Copyright © 2013-2017 Paul Mucur.
 
 Distributed under the Eclipse Public License, the same as Clojure.
