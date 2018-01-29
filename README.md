@@ -15,7 +15,7 @@ following to your [Leiningen](https://github.com/technomancy/leiningen)
 dependencies:
 
 ```clojure
-[riveted "0.1.0"]
+[riveted "0.1.1"]
 ```
 
 ## Compatibility
@@ -412,6 +412,6 @@ character encoding fix for Windows users.
 
 ## License
 
-Copyright © 2013-2017 Paul Mucur.
+Copyright © 2013-2018 Paul Mucur.
 
 Distributed under the Eclipse Public License, the same as Clojure.

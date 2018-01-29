@@ -2,6 +2,10 @@
 All notable changes to this project will be documented in this file. This
 project adheres to [Semantic Versioning](http://semver.org/).
 
+## [0.1.1] - 2018-01-29
+### Fixed
+- Fixed exception when calling fragment on a self-closing tag
+
 ## [0.1.0] - 2017-06-27
 ### Fixed
 - Explicitly set the character set to UTF-8 when reading XML
@@ -55,6 +59,7 @@ project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 - First stable version of riveted
 
+[0.1.1]: https://github.com/mudge/riveted/releases/tag/v0.1.1
 [0.1.0]: https://github.com/mudge/riveted/releases/tag/v0.1.0
 [0.0.9]: https://github.com/mudge/riveted/releases/tag/v0.0.9
 [0.0.8]: https://github.com/mudge/riveted/releases/tag/v0.0.8
