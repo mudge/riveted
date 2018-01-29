@@ -47,6 +47,7 @@
 (fact "fragment returns the content of the given navigator as an XML fragment."
   (fragment (at nav "/root/complex-title")) => "<i>Foo</i> woo <b>moo</b>"
   (fragment (at nav "/root/basic-title")) => "Foo"
+  (fragment (at nav "/root/foo")) => ""
   (fragment nil) => nil?)
 
 (fact "attr returns the value of the given attribute"

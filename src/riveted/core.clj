@@ -182,7 +182,9 @@
   [navigator]
   (when-let [nav (vtd-nav navigator)]
     (let [r (.getContentFragment nav)]
-      (.toString nav (bit-and r 16rFFFFFF) (bit-shift-right r 32)))))
+      (if (= r -1)
+        ""
+        (.toString nav (bit-and r 16rFFFFFF) (bit-shift-right r 32))))))
 
 ;;; Transient interface for navigation.
 
