@@ -1,4 +1,4 @@
-# riveted [![Build Status](https://travis-ci.org/mudge/riveted.png?branch=master)](https://travis-ci.org/mudge/riveted)
+# riveted [![Clojure CI](https://github.com/mudge/riveted/actions/workflows/clojure.yml/badge.svg)](https://github.com/mudge/riveted/actions/workflows/clojure.yml)
 
 A Clojure library for the
 [fast](http://vtd-xml.sourceforge.net/benchmark1.html) processing of XML with
@@ -20,7 +20,8 @@ dependencies:
 
 ## Compatibility
 
-riveted is tested against Clojure 1.3, 1.4, 1.5.1, 1.6, 1.7 and 1.8.
+riveted is tested against Clojure 1.3, 1.4, 1.5.1, 1.6, 1.7, 1.8, 1.9, 1.10.0,
+1.10.1, 1.10.2 and 1.10.3.
 
 ## API Documentation
 
@@ -412,6 +413,6 @@ character encoding fix for Windows users.
 
 ## License
 
-Copyright © 2013-2018 Paul Mucur.
+Copyright © 2013-2022 Paul Mucur.
 
 Distributed under the Eclipse Public License, the same as Clojure.
