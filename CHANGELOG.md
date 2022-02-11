@@ -2,6 +2,10 @@
 All notable changes to this project will be documented in this file. This
 project adheres to [Semantic Versioning](http://semver.org/).
 
+## [0.1.2] - 2022-02-11
+### Changed
+- Upgrade underlying VTD-XML dependency to 2.13.4 (thanks to Eugen Stan)
+
 ## [0.1.1] - 2018-01-29
 ### Fixed
 - Fixed exception when calling fragment on a self-closing tag
@@ -59,6 +63,7 @@ project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 - First stable version of riveted
 
+[0.1.2]: https://github.com/mudge/riveted/releases/tag/v0.1.2
 [0.1.1]: https://github.com/mudge/riveted/releases/tag/v0.1.1
 [0.1.0]: https://github.com/mudge/riveted/releases/tag/v0.1.0
 [0.0.9]: https://github.com/mudge/riveted/releases/tag/v0.0.9
