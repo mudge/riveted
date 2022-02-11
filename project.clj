@@ -3,7 +3,7 @@
   :url "https://github.com/mudge/riveted"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[com.ximpleware/vtd-xml "2.13"]]
+  :dependencies [[com.ximpleware/vtd-xml "2.13.4"]]
   :profiles {:dev {:dependencies [[midje "1.10.5"]]
                    :plugins [[lein-midje "3.2.2"]
                              [lein-codox "0.10.8"]]}
