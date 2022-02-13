@@ -1,0 +1,2 @@
+{:deps
+ {com.ximpleware/vtd-xml {:mvn/version "2.13.4"}}}
