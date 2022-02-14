@@ -1,0 +1,10 @@
+<article>
+    <title>Foo bar</title>
+    <author id="1">
+        <name>Robert Paulson</name>
+        <name>Joe Bloggs</name>
+    </author>
+    <abstract>
+    A <i>great</i> article all about things.
+    </abstract>
+</article>

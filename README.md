@@ -65,6 +65,9 @@ For more details, see [Usage](#usage) below.
 
 ## Usage
 
+NOTE: For your convenience, we created a sample project that you can use to experiment with riveted XML API.
+See `examples/simple` project.
+
 Once installed, you can include riveted into your desired namespace by
 requiring `riveted.core` like so:
 
