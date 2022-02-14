@@ -101,6 +101,12 @@ passing it a UTF-8 encoded string of XML and then storing the result in the
 (def nav (vtd/navigator (slurp "foo.xml")))
 ```
 
+If you already have your XML in a byte array, you can pass this directly to `navigator` instead of a UTF-8 string:
+
+```clojure
+(def nav (vtd/navigator my-byte-array))
+```
+
 `navigator` also takes an optional second argument to enable XML namespace
 support which is disabled by default. We'll look at this
 [later](#namespace-support) but, for now, we can process this document without
@@ -410,6 +416,9 @@ metadata.
 
 Thanks to [Heikki Hämäläinen](https://github.com/hjhamala) for contributing a
 character encoding fix for Windows users.
+
+Thanks to [Eugen Stan](https://github.com/ieugen) for suggesting that
+`navigator` should also accept byte arrays as well as UTF-8 strings.
 
 ## License
 
