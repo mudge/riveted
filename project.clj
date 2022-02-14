@@ -19,5 +19,5 @@
              :1.10.2 {:dependencies [[midje "1.10.5"] [org.clojure/clojure "1.10.2"]]}
              :1.10.3 {:dependencies [[midje "1.10.5"] [org.clojure/clojure "1.10.3"]]}}
   :aliases {"all" ["with-profile" "dev,1.3:dev,1.4:dev,1.5.1:dev,1.6:dev,1.7:dev,1.8:dev,1.9:dev,1.10.0:dev,1.10.1:dev,1.10.2:dev,1.10.3"]}
-  :codox {:src-dir-uri "https://github.com/mudge/riveted/blob/master"
+  :codox {:src-dir-uri "https://github.com/mudge/riveted/blob/main"
           :src-linenum-anchor-prefix "L"})
