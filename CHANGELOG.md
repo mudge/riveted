@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file. This
 project adheres to [Semantic Versioning](http://semver.org/).
 
+## [0.2.0] - 2022-02-15
+### Changed
+- Added support for passing a byte array directly to `navigator` rather than only
+  accepting UTF-8 strings (thanks to Eugen Stan for the suggestion)
+- Passing an invalid value to `navigator` (e.g. `nil`) will now throw an
+  `IllegalArgumentException` rather than a `NullPointerException`
+
 ## [0.1.2] - 2022-02-11
 ### Changed
 - Upgrade underlying VTD-XML dependency to 2.13.4 (thanks to Eugen Stan)
@@ -63,6 +70,7 @@ project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 - First stable version of riveted
 
+[0.2.0]: https://github.com/mudge/riveted/releases/tag/v0.2.0
 [0.1.2]: https://github.com/mudge/riveted/releases/tag/v0.1.2
 [0.1.1]: https://github.com/mudge/riveted/releases/tag/v0.1.1
 [0.1.0]: https://github.com/mudge/riveted/releases/tag/v0.1.0

@@ -15,7 +15,7 @@ following to your [Leiningen](https://github.com/technomancy/leiningen)
 dependencies:
 
 ```clojure
-[riveted "0.1.2"]
+[riveted "0.2.0"]
 ```
 
 ## Compatibility
