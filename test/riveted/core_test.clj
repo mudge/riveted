@@ -17,6 +17,16 @@
 (defn tags? [& tag-names] (fn [actual] (= tag-names (map tag actual))))
 (def root? (tag? "root"))
 
+(fact "navigator returns a VTD navigator for a byte array."
+  (navigator (.getBytes "<a></a>" "UTF-8")) => nav?
+  (navigator (.getBytes "<a></a>" "ISO-8859-1")) => nav?)
+
+(fact "navigator returns a VTD navigator for a UTF-8 string."
+  (navigator "<a></a>") => nav?)
+
+(fact "navigator raises an IllegalArgumentException nil if given nil."
+  (navigator nil) => (throws IllegalArgumentException))
+
 (fact "search returns a sequence of matching navigators for a given XPath."
   (search nav "/root/basic-title") => (one-of nav?)
   (search nav "//i") => (two-of nav?)

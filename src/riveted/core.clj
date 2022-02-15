@@ -101,23 +101,39 @@
   (when-let [nav (vtd-nav navigator)]
     (-> nav .cloneNav Navigator.)))
 
-(defn navigator
-  "Return a VTD navigator for the given UTF-8 XML string with optional
-  namespace support. If called with only a string of XML, namespace support is
-  disabled.
+(defprotocol Navigable
+  "Protocol for types that can be used to generate a VTD navigator."
+  (navigator
+    [xml]
+    [xml namespace-aware]
+    "Return a VTD navigator for a given byte array or UTF-8 string of XML with
+    optional namespace support. If called with only a byte array or string,
+    namespace support is disabled.
 
-  Examples:
+    Examples:
 
-    ; Return a navigator for the given string with no namespace support.
-    (navigator \"<root><foo>Bar</foo></root>\")
+      ; Return a navigator for the given byte array with no namespace support.
+      (navigator my-byte-array)
 
-    ; Return a navigator for the given string with namespace support.
-    (navigator \"<root xmlns:ns=\\\"http://example.com/ns\\\"><foo>Bar</foo></root>\" true)"
-  ([^String xml] (navigator xml false))
-  ([^String xml namespace-aware]
-   (let [vg (doto (VTDGen.) (.setDoc (.getBytes xml "UTF-8"))
-                            (.parse namespace-aware))]
-     (Navigator. (.getNav vg)))))
+      ; Return a navigator for the given UTF-8 string with no namespace support.
+      (navigator \"<root><foo>Bar</foo></root>\")
+
+      ; Return a navigator for the given UTF-8 string with namespace support.
+      (navigator \"<root xmlns:ns=\\\"http://example.com/ns\\\"><foo>Bar</foo></root>\" true)"))
+
+(extend-protocol Navigable
+  (Class/forName "[B")
+  (navigator
+    ([xml] (navigator xml false))
+    ([xml namespace-aware]
+     (let [vg (doto (VTDGen.) (.setDoc xml)
+                    (.parse namespace-aware))]
+       (Navigator. (.getNav vg)))))
+
+  java.lang.String
+  (navigator
+    ([xml] (navigator (.getBytes xml "UTF-8") false))
+    ([xml namespace-aware] (navigator (.getBytes xml "UTF-8") namespace-aware))))
 
 (defn tag
   "Return the tag name for the element under the given VTD navigator as a
