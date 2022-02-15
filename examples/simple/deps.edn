@@ -1,0 +1,2 @@
+{:deps
+ {io.github.mudge/riveted {:git/sha "74483efd51e6832b42b0c0c28281d584bbe5e62f"}}}
